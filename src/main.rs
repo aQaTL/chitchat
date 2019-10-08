@@ -24,14 +24,18 @@ fn main() -> io::Result<()> {
 
 	let ws_server_actor = WebsocketServer {}.start();
 
+	let bind_addr = format!("{}:{}", config.ip, config.port);
+
 	HttpServer::new(move || {
 		App::new()
 			.data(ws_server_actor.clone())
 			.route("/ws", web::get().to(websocket_connect))
-			.service(actix_files::Files::new("/", "/frontend"))
+			.service(actix_files::Files::new("/", "frontend").index_file("index.html"))
 	})
-	.bind(format!("{}:{}", config.ip, config.port))?
+	.bind(&bind_addr)?
 	.start();
+
+	println!("Running on: {}", bind_addr);
 
 	sys.run()
 }
