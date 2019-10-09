@@ -5,8 +5,10 @@ use std::io;
 use serde::Deserialize;
 
 mod websocket_server;
+mod sockjs_server;
 
 use websocket_server::*;
+use sockjs::SockJSManager;
 
 #[derive(Deserialize)]
 struct Config {
@@ -24,12 +26,16 @@ fn main() -> io::Result<()> {
 
 	let ws_server_actor = WebsocketServer { users: Vec::with_capacity(10) }.start();
 
+	let sockjs_session_manager_addr = SockJSManager::<sockjs_server::Server>::start_default();
+
 	let bind_addr = format!("{}:{}", config.ip, config.port);
 
 	HttpServer::new(move || {
+		let manager = sockjs_session_manager_addr.clone();
 		App::new()
 			.data(ws_server_actor.clone())
-			.route("/ws", web::get().to(websocket_connect))
+			//.route("/ws", web::get().to(websocket_connect))
+			.route("/sockjs", sockjs::SockJS::new(manager.clone()))
 			.service(actix_files::Files::new("/", "frontend").index_file("index.html"))
 	})
 	.bind(&bind_addr)?
