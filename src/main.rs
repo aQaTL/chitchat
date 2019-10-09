@@ -22,7 +22,7 @@ fn main() -> io::Result<()> {
 
 	let sys = System::new(env!("CARGO_PKG_NAME"));
 
-	let ws_server_actor = WebsocketServer {}.start();
+	let ws_server_actor = WebsocketServer { users: Vec::with_capacity(10) }.start();
 
 	let bind_addr = format!("{}:{}", config.ip, config.port);
 
@@ -45,5 +45,10 @@ fn websocket_connect(
 	stream: web::Payload,
 	srv: web::Data<Addr<WebsocketServer>>,
 ) -> impl Responder {
-	ws::start(WebsocketConnection {}, &req, stream)
+	ws::start(
+		WebsocketConnection {
+			srv_addr: srv.get_ref().clone(),
+		}, 
+		&req,
+		stream)
 }
