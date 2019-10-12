@@ -1,9 +1,9 @@
 use actix::{Actor, Addr, System};
+use actix_web::web::{Data, Path};
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use actix_web_actors::ws;
 use serde::Deserialize;
 use std::io;
-use actix_web::web::{Data, Path};
 use std::sync::Mutex;
 
 mod websocket_server;
@@ -11,6 +11,7 @@ mod websocket_server;
 mod sse;
 
 use crate::sse::Broadcaster;
+use actix_session::{CookieSession, Session};
 use websocket_server::*;
 
 #[derive(Deserialize)]
@@ -41,6 +42,7 @@ fn main() -> io::Result<()> {
 	HttpServer::new(move || {
 		//		let manager = sockjs_session_manager_addr.clone();
 		App::new()
+			.wrap(CookieSession::signed(&[0; 32]).secure(false))
 			.data(ws_server_actor.clone())
 			.register_data(broadcaster.clone())
 			//			.route("/ws", web::get().to(websocket_connect))
@@ -72,16 +74,43 @@ fn websocket_connect(
 	)
 }
 
-fn new_client(broadcaster: Data<Mutex<Broadcaster>>) -> impl Responder {
-	let rx = broadcaster.lock().unwrap().new_user();
-
-	HttpResponse::Ok()
-		.header("content-type", "text/event-stream")
-		.no_chunking()
-		.streaming(rx)
+#[derive(Deserialize)]
+struct NewClientQueryParams {
+	nick: String,
 }
 
-fn broadcast_msg(msg: Path<String>, broadcaster: Data<Mutex<Broadcaster>>) -> impl Responder {
-	broadcaster.lock().unwrap().send(&msg.into_inner());
-	HttpResponse::Ok().body("msg sent")
+fn new_client(
+	params: web::Query<NewClientQueryParams>,
+	broadcaster: Data<Mutex<Broadcaster>>,
+	session: Session,
+) -> Result<impl Responder, actix_web::Error> {
+	let mut broadcaster = broadcaster.lock().unwrap();
+	if let Some(nick) = session.get::<String>("nick")? {
+		if broadcaster.users.iter().any(|user| user.nick == nick) {
+			return Ok(HttpResponse::BadRequest().body("Your nick is taken"));
+		}
+	}
+
+	session.set("nick", params.nick.clone())?;
+
+	let rx = broadcaster.new_user(&params.nick);
+
+	Ok(HttpResponse::Ok()
+		.header("content-type", "text/event-stream")
+		.no_chunking()
+		.streaming(rx))
+}
+
+fn broadcast_msg(
+	msg: Path<String>,
+	broadcaster: Data<Mutex<Broadcaster>>,
+	session: Session,
+) -> Result<impl Responder, actix_web::Error> {
+	let nick = session.get::<String>("nick")?.unwrap_or_default();
+	broadcaster
+		.lock()
+		.unwrap()
+		.send(nick.as_str(), &msg.into_inner());
+
+	Ok(HttpResponse::Ok().body(format!("msg sent from {}", nick,)))
 }

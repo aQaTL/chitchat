@@ -4,13 +4,13 @@ use std::time::{Duration, Instant};
 use actix::Arbiter;
 use actix_web::error::ErrorInternalServerError;
 use actix_web::web::{Bytes, Data};
+use serde_json::json;
 use tokio::prelude::*;
 use tokio::sync::mpsc;
-use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::timer::Interval;
 
 pub struct Broadcaster {
-	users: Vec<Sender<Bytes>>,
+	pub users: Vec<User>,
 }
 
 impl Default for Broadcaster {
@@ -43,38 +43,60 @@ impl Broadcaster {
 			.iter()
 			.filter_map(|user| {
 				let mut user = user.clone();
-				if user.try_send(Bytes::from("data: ping\n\n")).is_ok() {
+				if user.sender.try_send(Bytes::from("data: ping\n\n")).is_ok() {
 					Some(user)
 				} else {
 					None
 				}
 			})
-			.collect::<Vec<Sender<Bytes>>>();
+			.collect::<Vec<User>>();
 	}
 
-	pub fn new_user(&mut self) -> User {
+	pub fn new_user(&mut self, nick: &str) -> UserDataStream {
 		let (tx, rx) = mpsc::channel(100);
 
 		tx.clone()
 			.try_send(Bytes::from("data: connected\n\n"))
 			.unwrap();
 
-		self.users.push(tx);
-		User(rx)
+		self.users.push(User {
+			nick: String::from(nick),
+			sender: tx,
+		});
+
+		UserDataStream(rx)
 	}
 
-	pub fn send(&mut self, msg: &str) {
-		let msg = Bytes::from(["data: ", msg, "\n\n"].concat());
+	pub fn send(&mut self, sender_nick: &str, msg: &str) {
+		let msg = Bytes::from(
+			[
+				"data: ",
+				json!({
+					"nick": sender_nick,
+					"msg": msg,
+				})
+				.to_string()
+				.as_str(),
+				"\n\n",
+			]
+			.concat(),
+		);
 
 		for user in &mut self.users {
-			user.try_send(msg.clone()).unwrap_or(());
+			user.sender.try_send(msg.clone()).unwrap_or(());
 		}
 	}
 }
 
-pub struct User(Receiver<Bytes>);
+#[derive(Clone)]
+pub struct User {
+	pub nick: String,
+	sender: mpsc::Sender<Bytes>,
+}
 
-impl Stream for User {
+pub struct UserDataStream(mpsc::Receiver<Bytes>);
+
+impl Stream for UserDataStream {
 	type Item = Bytes;
 	type Error = actix_web::Error;
 
