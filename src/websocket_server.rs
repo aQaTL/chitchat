@@ -41,8 +41,8 @@ impl Actor for WebsocketConnection {
 					}
 				}
 				fut::ok(())
-				})
-		.wait(ctx)
+			})
+			.wait(ctx)
 	}
 }
 
