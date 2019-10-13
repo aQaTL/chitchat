@@ -10,7 +10,20 @@
 </head>
 <body>
 	<div id="app">
-		{{ msg }}
+		<header>
+			<connect-form v-on:connect="handle_connect"></connect-form>
+		</header>
+		<main>
+			<section>
+				<div class="message" v-for="msg in messages">
+					<span>{{ msg.nick }}</span>: <span>{{ msg.msg }}</span>
+				</div>
+			</section>
+		</main>
+		<aside>
+			<!--		User list-->
+		</aside>
+		<footer></footer>
 	</div>
 </body>
 </html>

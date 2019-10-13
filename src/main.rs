@@ -1,18 +1,20 @@
+use std::io;
+use std::sync::Mutex;
+
 use actix::{Actor, Addr, System};
+use actix_session::{CookieSession, Session};
 use actix_web::web::{Data, Path};
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use actix_web_actors::ws;
 use serde::Deserialize;
-use std::io;
-use std::sync::Mutex;
+
+use websocket_server::*;
+
+use crate::sse::{Broadcaster, Msg, MsgType};
 
 mod websocket_server;
 //mod sockjs_server;
 mod sse;
-
-use crate::sse::Broadcaster;
-use actix_session::{CookieSession, Session};
-use websocket_server::*;
 
 #[derive(Deserialize)]
 struct Config {
@@ -87,7 +89,9 @@ fn new_client(
 	let mut broadcaster = broadcaster.lock().unwrap();
 	if let Some(nick) = session.get::<String>("nick")? {
 		if broadcaster.users.iter().any(|user| user.nick == nick) {
-			return Ok(HttpResponse::BadRequest().body("Your nick is taken"));
+			return Ok(HttpResponse::Ok()
+				.content_type("application/json")
+				.body(serde_json::to_string(&Msg::new(MsgType::YourNickIsTaken))?));
 		}
 	}
 
