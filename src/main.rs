@@ -3,7 +3,7 @@ use std::sync::Mutex;
 
 use actix::{Actor, Addr, System};
 use actix_session::{CookieSession, Session};
-use actix_web::web::{Data, Path};
+use actix_web::web::{Data};
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use actix_web_actors::ws;
 use serde::Deserialize;
@@ -50,7 +50,7 @@ fn main() -> io::Result<()> {
 			//			.route("/ws", web::get().to(websocket_connect))
 			//			.route("/sockjs", sockjs::SockJS::new(manager.clone()))
 			.route("/events", web::get().to(new_client))
-			.route("/broadcast/{msg}", web::get().to(broadcast_msg))
+			.route("/send_msg", web::post().to(send_msg))
 			.service(actix_files::Files::new("/", "frontend").index_file("index.html"))
 	})
 	.bind(&bind_addr)?
@@ -87,13 +87,13 @@ fn new_client(
 	session: Session,
 ) -> Result<impl Responder, actix_web::Error> {
 	let mut broadcaster = broadcaster.lock().unwrap();
-	if let Some(nick) = session.get::<String>("nick")? {
-		if broadcaster.users.iter().any(|user| user.nick == nick) {
-			return Ok(HttpResponse::Ok()
-				.content_type("application/json")
-				.body(serde_json::to_string(&Msg::new(MsgType::YourNickIsTaken))?));
-		}
-	}
+//	if let Some(nick) = session.get::<String>("nick")? {
+//		if broadcaster.users.iter().any(|user| user.nick == nick) {
+//			return Ok(HttpResponse::Ok()
+//				.content_type("application/json")
+//				.body(serde_json::to_string(&Msg::new(MsgType::YourNickIsTaken))?));
+//		}
+//	}
 
 	session.set("nick", params.nick.clone())?;
 
@@ -105,8 +105,8 @@ fn new_client(
 		.streaming(rx))
 }
 
-fn broadcast_msg(
-	msg: Path<String>,
+fn send_msg(
+	msg: web::Json<String>,
 	broadcaster: Data<Mutex<Broadcaster>>,
 	session: Session,
 ) -> Result<impl Responder, actix_web::Error> {
@@ -114,7 +114,7 @@ fn broadcast_msg(
 	broadcaster
 		.lock()
 		.unwrap()
-		.send(nick.as_str(), &msg.into_inner());
+		.send(nick.as_str(), msg.as_str());
 
-	Ok(HttpResponse::Ok().body(format!("msg sent from {}", nick,)))
+	Ok(HttpResponse::Ok())
 }

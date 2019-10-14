@@ -11,9 +11,16 @@
 <body>
 	<div id="app">
 		<header>
-			<connect-form v-on:connect="handle_connect"></connect-form>
+			<connect-form v-if="!connected" v-on:connect="handle_connect"></connect-form>
+			<div v-else>
+				Connected
+			</div>
 		</header>
 		<main>
+			<section>
+				<label for="msg_input">Message: </label>
+				<input type="text" v-model="user_msg" id="msg_input" v-on:keyup.enter="send_msg()">
+			</section>
 			<section>
 				<div class="message" v-for="msg in messages">
 					<span>{{ msg.nick }}</span>: <span>{{ msg.msg }}</span>

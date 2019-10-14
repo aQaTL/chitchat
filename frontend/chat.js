@@ -31,9 +31,10 @@ window.onload = () => (new Vue({
 
 	data: {
 		eventSource: null,
-		msg: "Hello, World",
+		user_msg: "",
 		nick: "",
 		messages: [],
+		connected: false,
 	},
 
 	mounted: function () {
@@ -52,7 +53,7 @@ window.onload = () => (new Vue({
 			this.eventSource.onerror = event => console.log(event);
 			this.eventSource.onmessage = this.handle_message;
 		},
-		handle_message(event) {
+		handle_message: function(event) {
 			console.log(event.data);
 			let msg = JSON.parse(event.data);
 
@@ -60,6 +61,7 @@ window.onload = () => (new Vue({
 				case MsgType.Connected:
 					console.log("Connected");
 					sessionStorage.setItem("nick", this.nick);
+					this.connected = true;
 					break;
 				case MsgType.Ping: break;
 				case MsgType.YourNickIsTaken:
@@ -72,6 +74,19 @@ window.onload = () => (new Vue({
 					console.log("Unknown type");
 					break;
 			}
-		}
+		},
+		send_msg: function() {
+			let xhr = new XMLHttpRequest();
+			xhr.open("POST", "/send_msg", true);
+			xhr.onload = () => {
+				if (xhr.status !== 200) {
+					console.log("request failed");
+					return;
+				}
+				this.user_msg = "";
+			};
+			xhr.setRequestHeader("content-type", "application/json");
+			xhr.send(JSON.stringify(this.user_msg));
+		},
 	},
 }));
