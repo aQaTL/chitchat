@@ -60,6 +60,7 @@ window.onload = () => (new Vue({
 			switch (msg.type) {
 				case MsgType.Connected:
 					console.log("Connected");
+					this.messages.push(...msg.data);
 					sessionStorage.setItem("nick", this.nick);
 					this.connected = true;
 					break;

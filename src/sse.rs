@@ -11,11 +11,15 @@ use tokio::timer::Interval;
 
 pub struct Broadcaster {
 	pub users: Vec<User>,
+	pub history: Vec<UserMsg>,
 }
 
 impl Default for Broadcaster {
 	fn default() -> Self {
-		Broadcaster { users: Vec::new() }
+		Broadcaster {
+			users: Vec::new(),
+			history: Vec::new(),
+		}
 	}
 }
 
@@ -59,7 +63,7 @@ impl Broadcaster {
 	pub fn new_user(&mut self, nick: &str) -> UserDataStream {
 		let (mut tx, rx) = mpsc::channel(100);
 
-		tx.try_send(event_data(Msg::new(MsgType::Connected)))
+		tx.try_send(event_data(Msg::connected(&self.history)))
 			.unwrap();
 
 		self.users.push(User {
@@ -71,6 +75,11 @@ impl Broadcaster {
 	}
 
 	pub fn send(&mut self, nick: &str, msg: &str) {
+		self.history.push(UserMsg {
+			nick: String::from(nick),
+			msg: String::from(msg),
+		});
+
 		let msg = event_data(Msg::user_msg(nick, msg));
 
 		for user in &mut self.users {
@@ -81,13 +90,13 @@ impl Broadcaster {
 
 #[derive(Serialize)]
 pub struct Msg<T> {
-	pub r#type: MsgType,
-	pub data: Option<T>,
+	r#type: MsgType,
+	data: Option<T>,
 }
 
-impl<'a> Msg<UserMsg<'a>> {
+impl<'a> Msg<UserMsgRef<'a>> {
 	pub fn user_msg(nick: &'a str, msg: &'a str) -> Self {
-		let user_msg = UserMsg { nick, msg };
+		let user_msg = UserMsgRef { nick, msg };
 		Msg {
 			r#type: MsgType::Message,
 			data: Some(user_msg),
@@ -96,13 +105,22 @@ impl<'a> Msg<UserMsg<'a>> {
 }
 
 impl Msg<()> {
-	pub fn new(r#type: MsgType) -> Self {
+	fn new(r#type: MsgType) -> Self {
 		Msg { r#type, data: None }
 	}
 }
 
+impl<'a> Msg<&'a Vec<UserMsg>> {
+	pub fn connected(history: &'a Vec<UserMsg>) -> Self {
+		Msg {
+			r#type: MsgType::Connected,
+			data: Some(history),
+		}
+	}
+}
+
 #[derive(Serialize)]
-pub enum MsgType {
+enum MsgType {
 	Connected,
 	Ping,
 	Message,
@@ -110,9 +128,15 @@ pub enum MsgType {
 }
 
 #[derive(Serialize)]
-pub struct UserMsg<'a> {
+pub struct UserMsgRef<'a> {
 	pub nick: &'a str,
 	pub msg: &'a str,
+}
+
+#[derive(Serialize)]
+pub struct UserMsg {
+	pub nick: String,
+	pub msg: String,
 }
 
 #[derive(Clone)]

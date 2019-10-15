@@ -1,19 +1,14 @@
 use std::io;
 use std::sync::Mutex;
 
-use actix::{Actor, Addr, System};
+use actix::System;
 use actix_session::{CookieSession, Session};
-use actix_web::web::{Data};
-use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
-use actix_web_actors::ws;
+use actix_web::web::Data;
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use serde::Deserialize;
 
-use websocket_server::*;
+use crate::sse::Broadcaster;
 
-use crate::sse::{Broadcaster, Msg, MsgType};
-
-mod websocket_server;
-//mod sockjs_server;
 mod sse;
 
 #[derive(Deserialize)]
@@ -30,25 +25,14 @@ fn main() -> io::Result<()> {
 
 	let sys = System::new(env!("CARGO_PKG_NAME"));
 
-	let ws_server_actor = WebsocketServer {
-		users: Vec::with_capacity(10),
-	}
-	.start();
-
-	//	let sockjs_session_manager_addr = SockJSManager::<sockjs_server::Server>::start_default();
-
 	let broadcaster = sse::Broadcaster::new();
 
 	let bind_addr = format!("{}:{}", config.ip, config.port);
 
 	HttpServer::new(move || {
-		//		let manager = sockjs_session_manager_addr.clone();
 		App::new()
 			.wrap(CookieSession::signed(&[0; 32]).secure(false))
-			.data(ws_server_actor.clone())
 			.register_data(broadcaster.clone())
-			//			.route("/ws", web::get().to(websocket_connect))
-			//			.route("/sockjs", sockjs::SockJS::new(manager.clone()))
 			.route("/events", web::get().to(new_client))
 			.route("/send_msg", web::post().to(send_msg))
 			.service(actix_files::Files::new("/", "frontend").index_file("index.html"))
@@ -59,21 +43,6 @@ fn main() -> io::Result<()> {
 	println!("Running on: {}", bind_addr);
 
 	sys.run()
-}
-
-#[allow(dead_code)]
-fn websocket_connect(
-	req: HttpRequest,
-	stream: web::Payload,
-	srv: web::Data<Addr<WebsocketServer>>,
-) -> impl Responder {
-	ws::start(
-		WebsocketConnection {
-			srv_addr: srv.get_ref().clone(),
-		},
-		&req,
-		stream,
-	)
 }
 
 #[derive(Deserialize)]
@@ -87,13 +56,13 @@ fn new_client(
 	session: Session,
 ) -> Result<impl Responder, actix_web::Error> {
 	let mut broadcaster = broadcaster.lock().unwrap();
-//	if let Some(nick) = session.get::<String>("nick")? {
-//		if broadcaster.users.iter().any(|user| user.nick == nick) {
-//			return Ok(HttpResponse::Ok()
-//				.content_type("application/json")
-//				.body(serde_json::to_string(&Msg::new(MsgType::YourNickIsTaken))?));
-//		}
-//	}
+	//	if let Some(nick) = session.get::<String>("nick")? {
+	//		if broadcaster.users.iter().any(|user| user.nick == nick) {
+	//			return Ok(HttpResponse::Ok()
+	//				.content_type("application/json")
+	//				.body(serde_json::to_string(&Msg::new(MsgType::YourNickIsTaken))?));
+	//		}
+	//	}
 
 	session.set("nick", params.nick.clone())?;
 
