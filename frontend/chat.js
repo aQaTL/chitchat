@@ -34,10 +34,13 @@ window.onload = () => (new Vue({
 		user_msg: "",
 		nick: "",
 		messages: [],
+
 		connected: false,
+		has_unread_msg: false,
 	},
 
 	mounted: function () {
+		window.addEventListener("focus", this.on_focus);
 	},
 
 	methods: {
@@ -66,10 +69,15 @@ window.onload = () => (new Vue({
 					break;
 				case MsgType.Ping: break;
 				case MsgType.YourNickIsTaken:
-					alert("Your nick is taken");
+					console.log("Your nick is taken");
 					break;
 				case MsgType.Message:
 					this.messages.push(msg.data);
+
+					if (!document.hasFocus() && !this.has_unread_msg) {
+						this.has_unread_msg = true;
+						document.title = "* " + document.title;
+					}
 					break;
 				default:
 					console.log("Unknown type");
@@ -88,6 +96,12 @@ window.onload = () => (new Vue({
 			};
 			xhr.setRequestHeader("content-type", "application/json");
 			xhr.send(JSON.stringify(this.user_msg));
+		},
+		on_focus: function() {
+			if (this.has_unread_msg) {
+				this.has_unread_msg = false;
+				document.title = document.title.substring(2);
+			}
 		},
 	},
 }));
