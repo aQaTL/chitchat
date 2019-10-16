@@ -8,6 +8,7 @@ use serde::Serialize;
 use tokio::prelude::*;
 use tokio::sync::mpsc;
 use tokio::timer::Interval;
+use chrono::{Datelike, TimeZone};
 
 pub struct Broadcaster {
 	pub users: Vec<User>,
@@ -27,6 +28,7 @@ impl Broadcaster {
 	pub fn new() -> Data<Mutex<Self>> {
 		let broadcaster = Data::new(Mutex::new(Broadcaster::default()));
 		Broadcaster::start_heartbeat(broadcaster.clone());
+		Broadcaster::start_history_cleaner(broadcaster.clone());
 		broadcaster
 	}
 
@@ -39,6 +41,22 @@ impl Broadcaster {
 			.map_err(|e| println!("Heartbeat error: {}", e));
 
 		Arbiter::spawn(task)
+	}
+
+	fn start_history_cleaner(broadcaster: Data<Mutex<Broadcaster>>) {
+		let now = chrono::Local::now();
+		let midnight = chrono::Local.ymd(now.year(), now.month(), now.day()).and_hms(23, 59, 59);
+		let now_std = Instant::now();
+		let i = now_std + ((midnight - now).to_std().expect("Failed to calc date"));
+
+		let task = Interval::new(i, Duration::from_secs(60 * 60 * 24))
+			.for_each(move |_instant| {
+				broadcaster.lock().unwrap().history.clear();
+				Ok(())
+			})
+			.map_err(|_| ());
+
+		Arbiter::spawn(task);
 	}
 
 	fn remove_dead_users(&mut self) {
