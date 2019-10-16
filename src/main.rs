@@ -19,7 +19,14 @@ struct Config {
 
 fn main() -> io::Result<()> {
 	let config = {
-		let data = std::fs::read("config.toml")?;
+		let data = match std::fs::read("config.toml") {
+			Ok(data) => data,
+			Err(ref e) if e.kind() == io::ErrorKind::NotFound => {
+				println!("config.toml not found, using config_template.toml");
+				std::fs::read("config_template.toml")?
+			}
+			Err(e) => return Err(e),
+		};
 		toml::from_slice::<Config>(data.as_slice())?
 	};
 
