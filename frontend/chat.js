@@ -63,9 +63,13 @@ window.onload = () => (new Vue({
 			switch (msg.type) {
 				case MsgType.Connected:
 					console.log("Connected");
+
 					this.messages.push(...msg.data);
+					this.scroll_to_bottom();
+
 					sessionStorage.setItem("nick", this.nick);
 					this.connected = true;
+
 					break;
 				case MsgType.Ping: break;
 				case MsgType.YourNickIsTaken:
@@ -73,6 +77,7 @@ window.onload = () => (new Vue({
 					break;
 				case MsgType.Message:
 					this.messages.push(msg.data);
+					this.scroll_to_bottom();
 
 					if (!document.hasFocus() && !this.has_unread_msg) {
 						this.has_unread_msg = true;
@@ -102,6 +107,12 @@ window.onload = () => (new Vue({
 				this.has_unread_msg = false;
 				document.title = document.title.substring(2);
 			}
+		},
+		scroll_to_bottom: function() {
+			Vue.nextTick(() => {
+				let msgs = this.$refs.messages;
+				msgs.scrollTop = msgs.scrollHeight;
+			});
 		},
 	},
 

@@ -1,3 +1,53 @@
+@import url('https://fonts.googleapis.com/css?family=Open+Sans:400,700&display=swap');
+
 body {
-	background-color: white;
+	background-color: #393939;
+	margin: 0;
+}
+
+#app {
+	font-family: 'Open Sans', sans-serif;
+
+	height: 100vh;
+	display: grid;
+	padding: 1em;
+	box-sizing: border-box;
+	grid-template-columns: 1fr;
+	grid-template-rows: 2em 1fr 2em;
+	align-content: end;
+	color: #f0f8ff;
+}
+
+header {
+	background-color: #393939;
+}
+
+main {
+	background-color: #696969;
+}
+
+#connect_form {
+}
+
+.connect_form_connected {
+	width: 0;
+	height: 0;
+}
+
+#input {
+	display: flex;
+	justify-content: center;
+	box-sizing: content-box;
+	padding-top: 5px;
+}
+
+#msg_input {
+	border: none;
+	border-radius: 15px;
+	flex-grow: 1;
+	padding-left: 1em;
+}
+
+#messages {
+	overflow-y: scroll;
 }
