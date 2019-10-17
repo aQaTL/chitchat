@@ -4,11 +4,11 @@ use std::time::{Duration, Instant};
 use actix::Arbiter;
 use actix_web::error::ErrorInternalServerError;
 use actix_web::web::{Bytes, Data};
+use chrono::{prelude::*, Datelike, TimeZone};
 use serde::Serialize;
 use tokio::prelude::*;
 use tokio::sync::mpsc;
 use tokio::timer::Interval;
-use chrono::{Datelike, TimeZone};
 
 pub struct Broadcaster {
 	pub users: Vec<User>,
@@ -45,7 +45,9 @@ impl Broadcaster {
 
 	fn start_history_cleaner(broadcaster: Data<Mutex<Broadcaster>>) {
 		let now = chrono::Local::now();
-		let midnight = chrono::Local.ymd(now.year(), now.month(), now.day()).and_hms(23, 59, 59);
+		let midnight = chrono::Local
+			.ymd(now.year(), now.month(), now.day())
+			.and_hms(23, 59, 59);
 		let now_std = Instant::now();
 		let i = now_std + ((midnight - now).to_std().expect("Failed to calc date"));
 
@@ -92,13 +94,16 @@ impl Broadcaster {
 		UserDataStream(rx)
 	}
 
-	pub fn send(&mut self, nick: &str, msg: &str) {
-		self.history.push(UserMsg {
-			nick: String::from(nick),
-			msg: String::from(msg),
-		});
+	pub fn send(&mut self, nick: String, msg: String) {
+		let user_msg = UserMsg {
+			nick,
+			msg,
+			time: Utc::now(),
+		};
 
-		let msg = event_data(Msg::user_msg(nick, msg));
+		let msg = event_data(Msg::user_msg(&user_msg));
+
+		self.history.push(user_msg);
 
 		for user in &mut self.users {
 			user.sender.try_send(msg.clone()).unwrap_or(());
@@ -112,12 +117,11 @@ pub struct Msg<T> {
 	data: Option<T>,
 }
 
-impl<'a> Msg<UserMsgRef<'a>> {
-	pub fn user_msg(nick: &'a str, msg: &'a str) -> Self {
-		let user_msg = UserMsgRef { nick, msg };
+impl<'a> Msg<&'a UserMsg> {
+	pub fn user_msg(msg: &'a UserMsg) -> Self {
 		Msg {
 			r#type: MsgType::Message,
-			data: Some(user_msg),
+			data: Some(msg),
 		}
 	}
 }
@@ -146,15 +150,10 @@ enum MsgType {
 }
 
 #[derive(Serialize)]
-pub struct UserMsgRef<'a> {
-	pub nick: &'a str,
-	pub msg: &'a str,
-}
-
-#[derive(Serialize)]
 pub struct UserMsg {
 	pub nick: String,
 	pub msg: String,
+	pub time: DateTime<Utc>,
 }
 
 #[derive(Clone)]

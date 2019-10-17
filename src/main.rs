@@ -87,10 +87,7 @@ fn send_msg(
 	session: Session,
 ) -> Result<impl Responder, actix_web::Error> {
 	let nick = session.get::<String>("nick")?.unwrap_or_default();
-	broadcaster
-		.lock()
-		.unwrap()
-		.send(nick.as_str(), msg.as_str());
+	broadcaster.lock().unwrap().send(nick, msg.0.clone());
 
 	Ok(HttpResponse::Ok())
 }

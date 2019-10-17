@@ -104,4 +104,8 @@ window.onload = () => (new Vue({
 			}
 		},
 	},
+
+	filters: {
+		time: (date_str) => new Date(date_str).toLocaleTimeString(),
+	},
 }));
