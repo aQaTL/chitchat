@@ -14,9 +14,14 @@ Vue.component("connect-form", {
 	},
 
 	template: `
-<div>
-	<label for="nick">Nick: </label><input type="text" name="nick" v-model="nick">
-	<button v-on:click="$emit('connect', nick)">Connect</button>
+<div class="nick_input">
+	<input 
+		type="text"
+		name="nick"
+		id="nick"
+		placeholder="Nick"
+		v-model="nick"
+		v-on:keyup.enter="$emit('connect', nick)">
 </div>`,
 });
 
@@ -57,7 +62,7 @@ window.onload = () => (new Vue({
 			this.eventSource.onerror = event => console.log(event);
 			this.eventSource.onmessage = this.handle_message;
 		},
-		handle_message: function(event) {
+		handle_message: function (event) {
 			console.log(event.data);
 			let msg = JSON.parse(event.data);
 
@@ -72,7 +77,8 @@ window.onload = () => (new Vue({
 					this.connected = true;
 
 					break;
-				case MsgType.Ping: break;
+				case MsgType.Ping:
+					break;
 				case MsgType.YourNickIsTaken:
 					console.log("Your nick is taken");
 					break;
@@ -90,7 +96,7 @@ window.onload = () => (new Vue({
 					break;
 			}
 		},
-		send_msg: function() {
+		send_msg: function () {
 			let xhr = new XMLHttpRequest();
 			xhr.open("POST", "/send_msg", true);
 			xhr.onload = () => {
@@ -103,13 +109,13 @@ window.onload = () => (new Vue({
 			xhr.setRequestHeader("content-type", "application/json");
 			xhr.send(JSON.stringify(this.user_msg));
 		},
-		on_focus: function() {
+		on_focus: function () {
 			if (this.has_unread_msg) {
 				this.has_unread_msg = false;
 				document.title = document.title.substring(2);
 			}
 		},
-		scroll_to_bottom: function() {
+		scroll_to_bottom: function () {
 			Vue.nextTick(() => {
 				let msgs = this.$refs.messages;
 				msgs.scrollTop = msgs.scrollHeight;
