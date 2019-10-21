@@ -63,14 +63,6 @@ fn new_client(
 	session: Session,
 ) -> Result<impl Responder, actix_web::Error> {
 	let mut broadcaster = broadcaster.lock().unwrap();
-	//	if let Some(nick) = session.get::<String>("nick")? {
-	//		if broadcaster.users.iter().any(|user| user.nick == nick) {
-	//			return Ok(HttpResponse::Ok()
-	//				.content_type("application/json")
-	//				.body(serde_json::to_string(&Msg::new(MsgType::YourNickIsTaken))?));
-	//		}
-	//	}
-
 	session.set("nick", params.nick.clone())?;
 
 	let rx = broadcaster.new_user(&params.nick);
@@ -86,7 +78,10 @@ fn send_msg(
 	broadcaster: Data<Mutex<Broadcaster>>,
 	session: Session,
 ) -> Result<impl Responder, actix_web::Error> {
-	let nick = session.get::<String>("nick")?.unwrap_or_default();
+	let nick = match session.get::<String>("nick")? {
+		Some(nick) => nick,
+		None => return Ok(HttpResponse::Unauthorized()),
+	};
 	broadcaster.lock().unwrap().send(nick, msg.0.clone());
 
 	Ok(HttpResponse::Ok())

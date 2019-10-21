@@ -19,10 +19,6 @@ body {
 	color: #f0f8ff;
 }
 
-header {
-	background-color: #393939;
-}
-
 main {
 	background-color: #696969;
 }
@@ -45,11 +41,13 @@ main {
 }
 
 #msg_input {
-	border: none;
+	border: 1px solid darkorange;
 	border-radius: 15px;
 	flex-grow: 1;
 	padding: 10px 0 10px 1em;
 	font-family: 'Open Sans', sans-serif;
+	background-color: #595959;
+	color: #f0f8ff;
 }
 
 #messages {

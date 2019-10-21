@@ -146,7 +146,6 @@ enum MsgType {
 	Connected,
 	Ping,
 	Message,
-	YourNickIsTaken,
 }
 
 #[derive(Serialize)]
