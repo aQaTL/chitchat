@@ -3,16 +3,15 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>chitchat</title>
+	<title>Nowa karta</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="styles/style.css">
 	<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.min.js"></script>
 	<script src="chat.js"></script>
 </head>
 <body>
 	<div id="app">
 		<connect-form id="connect_form" v-if="!connected" v-on:connect="handle_connect"></connect-form>
-		<div v-else class="connect_form_connected"></div>
 
 		<section id="messages" ref="messages">
 			<div class="message" v-for="msg in messages">
@@ -20,6 +19,7 @@
 			</div>
 		</section>
 		<section id="input">
+			<label for="msg_input">{{ nick }}</label>
 			<input type="text" v-model="user_msg" id="msg_input" v-on:keyup.enter="send_msg()">
 		</section>
 	</div>

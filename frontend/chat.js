@@ -6,9 +6,10 @@ Vue.component("connect-form", {
 	},
 
 	mounted() {
-		let nick = sessionStorage.getItem("nick");
+		let nick = localStorage.getItem("nick");
 		if (nick !== null) {
 			this.nick = nick;
+			this.$emit("connect", this.nick);
 		}
 	},
 
@@ -67,7 +68,7 @@ window.onload = () => (new Vue({
 					this.messages.push(...msg.data);
 					this.scroll_to_bottom();
 
-					sessionStorage.setItem("nick", this.nick);
+					localStorage.setItem("nick", this.nick);
 					this.connected = true;
 
 					break;

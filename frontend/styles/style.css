@@ -3,18 +3,19 @@
 body {
 	background-color: #393939;
 	margin: 0;
+	padding: 0;
 }
 
 #app {
 	font-family: 'Open Sans', sans-serif;
 
 	height: 100vh;
-	display: grid;
-	padding: 1em;
+
+	display: flex;
+	flex-direction: column;
+
 	box-sizing: border-box;
-	grid-template-columns: 1fr;
-	grid-template-rows: 2em 1fr 2em;
-	align-content: end;
+	padding: 1em;
 	color: #f0f8ff;
 }
 
@@ -26,9 +27,6 @@ main {
 	background-color: #696969;
 }
 
-#connect_form {
-}
-
 .connect_form_connected {
 	width: 0;
 	height: 0;
@@ -37,17 +35,24 @@ main {
 #input {
 	display: flex;
 	justify-content: center;
+	align-items: baseline;
 	box-sizing: content-box;
 	padding-top: 5px;
+}
+
+#input > label {
+	margin-right: 1em;
 }
 
 #msg_input {
 	border: none;
 	border-radius: 15px;
 	flex-grow: 1;
-	padding-left: 1em;
+	padding: 10px 0 10px 1em;
+	font-family: 'Open Sans', sans-serif;
 }
 
 #messages {
-	overflow-y: scroll;
+	overflow-y: auto;
+	flex-grow: 1;
 }
