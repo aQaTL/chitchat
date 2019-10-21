@@ -57,6 +57,10 @@ Vue.component("chat", {
 		window.addEventListener("focus", this.on_focus);
 	},
 
+	activated: function() {
+		this.scroll_to_bottom();
+	},
+
 	methods: {
 		handle_connect: function (nick) {
 			this.nick = nick;
