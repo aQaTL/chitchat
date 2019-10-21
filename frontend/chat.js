@@ -140,8 +140,10 @@ Vue.component("chat", {
 	<connect-form id="connect_form" v-if="!connected" v-on:connect="handle_connect"></connect-form>
 
 	<section id="messages" ref="messages">
-		<div class="message" v-for="msg in messages">
-			<span>[{{ msg.time | time }}] </span><span>{{ msg.nick }}</span>: <span>{{ msg.msg }}</span>
+		<div>
+			<div class="message" v-for="msg in messages">
+				<span>[{{ msg.time | time }}] </span><span>{{ msg.nick }}</span>: <span>{{ msg.msg }}</span>
+			</div>
 		</div>
 	</section>
 	<section id="input">

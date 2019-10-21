@@ -15,7 +15,7 @@ body {
 header {
 	display: flex;
 	align-items: stretch;
-	overflow: hidden;
+	overflow-x: hidden;
 }
 
 .tab_button {
@@ -60,15 +60,6 @@ header {
 	color: #F0F8FF;
 }
 
-main {
-	background-color: #696969;
-}
-
-.connect_form_connected {
-	width: 0;
-	height: 0;
-}
-
 #input {
 	display: flex;
 	justify-content: center;
@@ -99,8 +90,12 @@ input[type=text]:focus {
 }
 
 #messages {
-	overflow-y: auto;
-	flex-grow: 1;
+	overflow: auto;
+	flex: 1;
+}
+
+#messages > div {
+	height: 1px; /* Magic */
 }
 
 .nick_input {
