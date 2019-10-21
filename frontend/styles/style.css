@@ -63,3 +63,8 @@ input[type=text] {
 	justify-content: center;
 	align-items: baseline;
 }
+
+.nick_input > input[type=text] {
+	padding: 1em;
+	text-align: center;
+}
