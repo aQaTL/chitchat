@@ -7,16 +7,57 @@ body {
 }
 
 #app {
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+}
+
+header {
+	display: flex;
+	align-items: stretch;
+	overflow: hidden;
+}
+
+.tab_button {
+	flex-grow: 1;
+
+	min-width: 200px;
+	padding: 6px 10px;
+	margin-bottom: -1px;
+	margin-right: -1px;
+	border-top-left-radius: 3px;
+	border-top-right-radius: 3px;
+
+	border: none;
+	background: #696969;
+	color: #F0F8FF;
+
+	cursor: pointer;
+}
+
+.tab_button:hover {
+	background-color: #E0E0E0;
+	color: #393939;
+}
+
+.tab_button.active {
+	outline: 0;
+	background-color: #393939;
+	color: #F0F8FF;
+	border-bottom: 2px solid darkorange;
+}
+
+.chat {
 	font-family: 'Open Sans', sans-serif;
 
-	height: 100vh;
+	flex-grow: 1;
 
 	display: flex;
 	flex-direction: column;
 
 	box-sizing: border-box;
 	padding: 1em;
-	color: #f0f8ff;
+	color: #F0F8FF;
 }
 
 main {
@@ -46,7 +87,11 @@ input[type=text] {
 	padding: 10px 0 10px 1em;
 	font-family: 'Open Sans', sans-serif;
 	background-color: #595959;
-	color: #f0f8ff;
+	color: #F0F8FF;
+}
+
+input[type=text]:focus {
+	outline: 0;
 }
 
 #msg_input {
@@ -67,4 +112,9 @@ input[type=text] {
 .nick_input > input[type=text] {
 	padding: 1em;
 	text-align: center;
+}
+
+button, button::-moz-focus-inner {
+	outline: none;
+	border: 0;
 }

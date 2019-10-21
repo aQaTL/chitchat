@@ -11,17 +11,19 @@
 </head>
 <body>
 	<div id="app">
-		<connect-form id="connect_form" v-if="!connected" v-on:connect="handle_connect"></connect-form>
+		<header>
+			<button
+					v-for="tab in tabs"
+					v-bind:key="tab"
+					v-bind:class="['tab_button', { active: current_tab === tab }]"
+					v-on:click="current_tab = tab"
+			>{{ tab }}
+			</button>
+		</header>
 
-		<section id="messages" ref="messages">
-			<div class="message" v-for="msg in messages">
-				<span>[{{ msg.time | time }}] </span><span>{{ msg.nick }}</span>: <span>{{ msg.msg }}</span>
-			</div>
-		</section>
-		<section id="input">
-			<label for="msg_input">{{ nick }}</label>
-			<input type="text" v-model="user_msg" id="msg_input" v-on:keyup.enter="send_msg()">
-		</section>
+		<keep-alive>
+			<component v-bind:is="current_tab" :class="current_tab"></component>
+		</keep-alive>
 	</div>
 </body>
 </html>

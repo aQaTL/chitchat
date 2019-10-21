@@ -1,3 +1,11 @@
+Vue.component("pastes", {
+	template: `
+<div>
+	<h1>Hello, World!</h1>
+</div>
+	`,
+});
+
 Vue.component("connect-form", {
 	data: function () {
 		return {
@@ -32,17 +40,17 @@ const MsgType = {
 	YourNickIsTaken: "YourNickIsTaken",
 };
 
-window.onload = () => (new Vue({
-	el: "#app",
+Vue.component("chat", {
+	data: function () {
+		return {
+			eventSource: null,
+			user_msg: "",
+			nick: "",
+			messages: [],
 
-	data: {
-		eventSource: null,
-		user_msg: "",
-		nick: "",
-		messages: [],
-
-		connected: false,
-		has_unread_msg: false,
+			connected: false,
+			has_unread_msg: false,
+		};
 	},
 
 	mounted: function () {
@@ -125,5 +133,30 @@ window.onload = () => (new Vue({
 
 	filters: {
 		time: (date_str) => new Date(date_str).toLocaleTimeString(),
+	},
+
+	template: `
+<div>
+	<connect-form id="connect_form" v-if="!connected" v-on:connect="handle_connect"></connect-form>
+
+	<section id="messages" ref="messages">
+		<div class="message" v-for="msg in messages">
+			<span>[{{ msg.time | time }}] </span><span>{{ msg.nick }}</span>: <span>{{ msg.msg }}</span>
+		</div>
+	</section>
+	<section id="input">
+		<label for="msg_input">{{ nick }}</label>
+		<input type="text" v-model="user_msg" id="msg_input" v-on:keyup.enter="send_msg()">
+	</section>
+</div>
+`,
+});
+
+window.onload = () => (new Vue({
+	el: "#app",
+
+	data: {
+		current_tab: "chat",
+		tabs: ["chat", "pastes"],
 	},
 }));
