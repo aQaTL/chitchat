@@ -21,8 +21,13 @@
 			</button>
 		</header>
 
-		<keep-alive>
-			<component v-bind:is="current_tab" :class="current_tab"></component>
+		<connect-form id="connect_form" v-if="!connected" v-on:connect="handle_connect"></connect-form>
+		<keep-alive v-else>
+			<component
+					v-bind:is="current_tab"
+					v-bind="tab_props"
+					v-on:connect="handle_connect"
+					:class="current_tab"></component>
 		</keep-alive>
 	</div>
 </body>

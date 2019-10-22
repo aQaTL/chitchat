@@ -7,9 +7,10 @@ use actix_web::web::Data;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use serde::Deserialize;
 
-use crate::sse::Broadcaster;
+use crate::chat::Broadcaster;
 
-mod sse;
+mod chat;
+mod pastes;
 
 #[derive(Deserialize)]
 struct Config {
@@ -32,7 +33,7 @@ fn main() -> io::Result<()> {
 
 	let sys = System::new(env!("CARGO_PKG_NAME"));
 
-	let broadcaster = sse::Broadcaster::new();
+	let broadcaster = chat::Broadcaster::new();
 
 	let bind_addr = format!("{}:{}", config.ip, config.port);
 
@@ -42,10 +43,11 @@ fn main() -> io::Result<()> {
 			.register_data(broadcaster.clone())
 			.route("/events", web::get().to(new_client))
 			.route("/send_msg", web::post().to(send_msg))
+			.route("/send_paste", web::post().to(send_paste))
 			.service(actix_files::Files::new("/", "frontend").index_file("index.html"))
 	})
-	.bind(&bind_addr)?
-	.start();
+		.bind(&bind_addr)?
+		.start();
 
 	println!("Running on: {}", bind_addr);
 
@@ -83,6 +85,30 @@ fn send_msg(
 		None => return Ok(HttpResponse::Unauthorized()),
 	};
 	broadcaster.lock().unwrap().send(nick, msg.0.clone());
+
+	Ok(HttpResponse::Ok())
+}
+
+#[derive(Deserialize)]
+struct NewPaste {
+	title: String,
+	content: String,
+}
+
+fn send_paste(
+	paste: web::Json<NewPaste>,
+	broadcaster: Data<Mutex<Broadcaster>>,
+  	session: Session) -> Result<impl Responder, actix_web::Error> {
+	let nick = match session.get::<String>("nick")? {
+		Some(nick) => nick,
+		None => return Ok(HttpResponse::Unauthorized()),
+	};
+
+	broadcaster.lock().unwrap().send_paste(pastes::Paste {
+		author: nick,
+		title: paste.0.title,
+		content: paste.0.content,
+	});
 
 	Ok(HttpResponse::Ok())
 }

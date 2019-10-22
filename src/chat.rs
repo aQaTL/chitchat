@@ -9,10 +9,12 @@ use serde::Serialize;
 use tokio::prelude::*;
 use tokio::sync::mpsc;
 use tokio::timer::Interval;
+use crate::pastes;
 
 pub struct Broadcaster {
 	pub users: Vec<User>,
 	pub history: Vec<UserMsg>,
+	pub pastes: Vec<pastes::Paste>,
 }
 
 impl Default for Broadcaster {
@@ -20,6 +22,7 @@ impl Default for Broadcaster {
 		Broadcaster {
 			users: Vec::new(),
 			history: Vec::new(),
+			pastes: Vec::new(),
 		}
 	}
 }
@@ -83,7 +86,7 @@ impl Broadcaster {
 	pub fn new_user(&mut self, nick: &str) -> UserDataStream {
 		let (mut tx, rx) = mpsc::channel(100);
 
-		tx.try_send(event_data(Msg::connected(&self.history)))
+		tx.try_send(event_data(Msg::connected(&self.history, &self.pastes)))
 			.unwrap();
 
 		self.users.push(User {
@@ -104,6 +107,16 @@ impl Broadcaster {
 		let msg = event_data(Msg::user_msg(&user_msg));
 
 		self.history.push(user_msg);
+
+		for user in &mut self.users {
+			user.sender.try_send(msg.clone()).unwrap_or(());
+		}
+	}
+
+	pub fn send_paste(&mut self, paste: pastes::Paste) {
+		let msg = event_data(Msg::paste_msg(&paste));
+
+		self.pastes.push(paste);
 
 		for user in &mut self.users {
 			user.sender.try_send(msg.clone()).unwrap_or(());
@@ -132,11 +145,20 @@ impl Msg<()> {
 	}
 }
 
-impl<'a> Msg<&'a Vec<UserMsg>> {
-	pub fn connected(history: &'a Vec<UserMsg>) -> Self {
+impl<'a> Msg<(&'a Vec<UserMsg>, &'a Vec<pastes::Paste>)> {
+	pub fn connected(history: &'a Vec<UserMsg>, pastes: &'a Vec<pastes::Paste>) -> Self {
 		Msg {
 			r#type: MsgType::Connected,
-			data: Some(history),
+			data: Some((history, pastes)),
+		}
+	}
+}
+
+impl<'a> Msg<&'a pastes::Paste> {
+	pub fn paste_msg(paste: &'a pastes::Paste) -> Self {
+		Msg {
+			r#type: MsgType::Paste,
+			data: Some(paste),
 		}
 	}
 }
@@ -146,6 +168,7 @@ enum MsgType {
 	Connected,
 	Ping,
 	Message,
+	Paste,
 }
 
 #[derive(Serialize)]
