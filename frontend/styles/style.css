@@ -15,7 +15,7 @@ body {
 header {
 	display: flex;
 	align-items: stretch;
-	overflow-x: hidden;
+	overflow: hidden;
 }
 
 .tab_button {
