@@ -21,7 +21,6 @@ header {
 .tab_button {
 	flex-grow: 1;
 
-	min-width: 200px;
 	padding: 6px 10px;
 	margin-bottom: -1px;
 	margin-right: -1px;
