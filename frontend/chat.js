@@ -9,7 +9,7 @@ Vue.component("pastes", {
 	},
 
 	methods: {
-		upload: function(_event) {
+		upload: function (_event) {
 			let xhr = new XMLHttpRequest();
 			xhr.open("POST", "/send_paste", true);
 			xhr.onload = () => {
@@ -38,10 +38,20 @@ Vue.component("pastes", {
 		v-model="content_input"
 		required></textarea>
 	<input type="button" value="Upload" v-on:click="upload">
-	<div v-for="paste in pastes">
-		{{ paste.author }}: {{ paste.title }}
-		<pre>{{ paste.content }}</pre>
+	<div>
+		<div v-for="paste in pastes" class="paste">
+			{{ paste.author }}: {{ paste.title }}
+			<pre class="paste_content">{{ paste.content }}</pre>
+		</div>
 	</div>
+</div>
+	`,
+});
+
+Vue.component("settings", {
+	template: `
+<div>
+	<h1>Hello, World!</h1>
 </div>
 	`,
 });
@@ -147,7 +157,7 @@ window.onload = () => (new Vue({
 
 	data: {
 		current_tab: "chat",
-		tabs: ["chat", "pastes"],
+		tabs: ["chat", "pastes", "settings"],
 
 		eventSource: null,
 		connected: false,
@@ -171,6 +181,8 @@ window.onload = () => (new Vue({
 						nick: this.nick,
 						pastes: this.pastes,
 					};
+				case "settings":
+					return {};
 			}
 		},
 	},
