@@ -25,23 +25,45 @@ Vue.component("pastes", {
 				title: this.title_input,
 				content: this.content_input,
 			}));
-		}
+		},
+		select: function (event) {
+			let el = event.target;
+			if (document.body.createTextRange) {
+				const range = document.body.createTextRange();
+				range.moveToElementText(el);
+				range.select();
+			} else if (window.getSelection) {
+				const selection = window.getSelection();
+				const range = document.createRange();
+				range.selectNodeContents(el);
+				selection.removeAllRanges();
+				selection.addRange(range);
+			} else {
+				console.log("failed to select");
+			}
+		},
 	},
 
 	template: `
-<div>
-	<input type="text" v-model="title_input">
-	<textarea 
-		name="content"
-		id="content_input"
-		placeholder="Paste content here..."
-		v-model="content_input"
-		required></textarea>
-	<input type="button" value="Upload" v-on:click="upload">
-	<div>
-		<div v-for="paste in pastes" class="paste">
-			{{ paste.author }}: {{ paste.title }}
-			<pre class="paste_content">{{ paste.content }}</pre>
+<div class="full_height_flex_container">
+	<div class="magic">
+		<div id="pastes">
+			<section id="paste_form">
+				<label>Title: </label><input type="text" v-model="title_input">
+				<textarea 
+					name="content"
+					id="content_input"
+					placeholder="Paste content here..."
+					rows="20"
+					v-model="content_input"
+					required></textarea>
+				<input type="button" value="Upload" v-on:click="upload">
+			</section>
+			<section v-for="paste in pastes.slice().reverse()" class="paste" v-on:dblclick="select">
+				{{ paste.author }}: {{ paste.title }}
+				<pre class="paste_content">{{ paste.content }}</pre>
+				
+			</section>
 		</div>
 	</div>
 </div>
@@ -79,6 +101,7 @@ Vue.component("connect-form", {
 		id="nick"
 		placeholder="Nick"
 		v-model="nick"
+		class="chat_input"
 		v-on:keyup.enter="$emit('connect', nick)">
 </div>`,
 });
@@ -137,8 +160,8 @@ Vue.component("chat", {
 
 	template: `
 <div>
-	<section id="messages" ref="messages">
-		<div>
+	<section class="full_height_flex_container" ref="messages">
+		<div class="magic">
 			<div class="message" v-for="msg in messages">
 				<span>[{{ msg.time | time }}] </span><span>{{ msg.nick }}</span>: <span>{{ msg.msg }}</span>
 			</div>
@@ -146,7 +169,12 @@ Vue.component("chat", {
 	</section>
 	<section id="input">
 		<label for="msg_input">{{ nick }}</label>
-		<input type="text" v-model="user_msg" id="msg_input" v-on:keyup.enter="send_msg()">
+		<input 
+			type="text"
+			v-model="user_msg"
+			id="msg_input"
+			class="chat_input"
+			v-on:keyup.enter="send_msg()">
 	</section>
 </div>
 `,

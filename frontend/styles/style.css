@@ -47,7 +47,7 @@ header {
 	border-top: 2px solid darkorange;
 }
 
-.chat {
+.tab-view {
 	font-family: 'Open Sans', sans-serif;
 
 	flex-grow: 1;
@@ -59,6 +59,7 @@ header {
 	padding: 1em;
 	color: #F0F8FF;
 }
+
 
 #input {
 	display: flex;
@@ -72,7 +73,7 @@ header {
 	margin-right: 1em;
 }
 
-input[type=text] {
+.chat_input {
 	border: 1px solid darkorange;
 	border-radius: 15px;
 	padding: 10px 0 10px 1em;
@@ -81,7 +82,7 @@ input[type=text] {
 	color: #F0F8FF;
 }
 
-input[type=text]:focus {
+.chat_input:focus {
 	outline: 0;
 }
 
@@ -89,12 +90,12 @@ input[type=text]:focus {
 	flex-grow: 1;
 }
 
-#messages {
+.full_height_flex_container {
 	overflow: auto;
 	flex: 1;
 }
 
-#messages > div {
+.magic {
 	height: 1px; /* Magic */
 }
 
@@ -112,4 +113,66 @@ input[type=text]:focus {
 button, button::-moz-focus-inner {
 	outline: none;
 	border: 0;
+}
+
+#pastes {
+	display: grid;
+	grid-auto-flow: row;
+	grid-template-columns: 1fr;
+	grid-gap: 20px;
+}
+
+@media screen and (min-width: 1000px) {
+	#pastes {
+		grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+	}
+}
+
+#paste_form {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+}
+
+#paste_form input[type=text] {
+	border: none;
+	background-color: #595959;
+	color: #F0F8FF;
+	padding: 5px;
+	border-radius: 5px;
+}
+
+#paste_form input[type=button] {
+	place-self: center;
+
+	border: 1px solid darkorange;
+	border-radius: 5px;
+	background-color: #292929;
+	color: #F0F8FF;
+	padding: 10px 50px 10px 50px;
+}
+
+#paste_form input[type=button]:hover {
+	place-self: center;
+	border: 1px solid #F0F8FF;
+	color: darkorange;
+	padding: 10px 50px 10px 50px;
+}
+
+textarea {
+	background-color: #595959;
+	color: #F0F8FF;
+	margin: 5px 0 5px 0;
+	border: none;
+
+}
+
+.paste {
+	background: #494949;
+}
+
+.paste_content {
+	overflow-x: hidden;
+	overflow-y: hidden;
+	white-space: pre-line;
 }
