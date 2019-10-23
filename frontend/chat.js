@@ -175,6 +175,10 @@ window.onload = () => (new Vue({
 		},
 	},
 
+	mounted: function () {
+		window.addEventListener("focus", this.on_focus);
+	},
+
 	methods: {
 		handle_connect: function (nick) {
 			this.nick = nick;
@@ -231,9 +235,6 @@ window.onload = () => (new Vue({
 				this.has_unread_msg = false;
 				document.title = document.title.substring(2);
 			}
-		},
-		mounted: function () {
-			window.addEventListener("focus", this.on_focus);
 		},
 	},
 }));
