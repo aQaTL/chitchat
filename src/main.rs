@@ -100,14 +100,13 @@ fn new_client(
 
 		pastes
 			.order(id.desc())
-			.paginate(1, 20)
-			.load_and_count_pages::<models::Paste>(&pool.get().unwrap())
+			.load::<models::Paste>(&pool.get().unwrap())
 			.expect("Unable to load pastes")
 	};
 
 	new_user.sender
 		.clone()
-		.try_send(chat::event_data(chat::Msg::connected(&broadcaster.history, &pastes.results)))
+		.try_send(chat::event_data(chat::Msg::connected(&broadcaster.history, &pastes)))
 		.unwrap();
 
 	Ok(HttpResponse::Ok()
