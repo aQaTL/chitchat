@@ -22,7 +22,7 @@ Vue.component("pastes", {
 			};
 			xhr.setRequestHeader("content-type", "application/json");
 			xhr.send(JSON.stringify({
-				title: this.title_input,
+				filename: this.title_input,
 				content: this.content_input,
 			}));
 		},
@@ -59,8 +59,8 @@ Vue.component("pastes", {
 					required></textarea>
 				<input type="button" value="Upload" v-on:click="upload">
 			</section>
-			<section v-for="paste in pastes.slice().reverse()" class="paste" v-on:dblclick="select">
-				{{ paste.author }}: {{ paste.title }}
+			<section v-for="paste in pastes" class="paste" v-on:dblclick="select">
+				<span class="paste_title">{{ paste.filename }}</span>
 				<pre class="paste_content">{{ paste.content }}</pre>
 				
 			</section>
@@ -255,7 +255,7 @@ window.onload = () => (new Vue({
 
 					break;
 				case MsgType.Paste:
-					this.pastes.push(msg.data);
+					this.pastes.unshift(msg.data);
 					this.notify();
 
 					break;

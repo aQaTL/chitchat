@@ -9,12 +9,11 @@ use serde::Serialize;
 use tokio::prelude::*;
 use tokio::sync::mpsc;
 use tokio::timer::Interval;
-use crate::pastes;
+use crate::models;
 
 pub struct Broadcaster {
 	pub users: Vec<User>,
 	pub history: Vec<UserMsg>,
-	pub pastes: Vec<pastes::Paste>,
 }
 
 impl Default for Broadcaster {
@@ -22,7 +21,6 @@ impl Default for Broadcaster {
 		Broadcaster {
 			users: Vec::new(),
 			history: Vec::new(),
-			pastes: Vec::new(),
 		}
 	}
 }
@@ -83,18 +81,18 @@ impl Broadcaster {
 			.collect::<Vec<User>>();
 	}
 
-	pub fn new_user(&mut self, nick: &str) -> UserDataStream {
+	pub fn new_user<'a>(&'a mut self, nick: &str) -> (UserDataStream, &'a User) {
 		let (mut tx, rx) = mpsc::channel(100);
 
-		tx.try_send(event_data(Msg::connected(&self.history, &self.pastes)))
+		tx.try_send(event_data(Msg::new(MsgType::Ping)))
 			.unwrap();
 
 		self.users.push(User {
 			nick: String::from(nick),
-			sender: tx,
+			sender: tx.clone(),
 		});
 
-		UserDataStream(rx)
+		(UserDataStream(rx), &self.users.last().unwrap())
 	}
 
 	pub fn send(&mut self, nick: String, msg: String) {
@@ -113,10 +111,8 @@ impl Broadcaster {
 		}
 	}
 
-	pub fn send_paste(&mut self, paste: pastes::Paste) {
+	pub fn send_paste(&mut self, paste: models::Paste) {
 		let msg = event_data(Msg::paste_msg(&paste));
-
-		self.pastes.push(paste);
 
 		for user in &mut self.users {
 			user.sender.try_send(msg.clone()).unwrap_or(());
@@ -145,8 +141,8 @@ impl Msg<()> {
 	}
 }
 
-impl<'a> Msg<(&'a Vec<UserMsg>, &'a Vec<pastes::Paste>)> {
-	pub fn connected(history: &'a Vec<UserMsg>, pastes: &'a Vec<pastes::Paste>) -> Self {
+impl<'a> Msg<(&'a Vec<UserMsg>, &'a Vec<models::Paste>)> {
+	pub fn connected(history: &'a Vec<UserMsg>, pastes: &'a Vec<models::Paste>) -> Self {
 		Msg {
 			r#type: MsgType::Connected,
 			data: Some((history, pastes)),
@@ -154,8 +150,8 @@ impl<'a> Msg<(&'a Vec<UserMsg>, &'a Vec<pastes::Paste>)> {
 	}
 }
 
-impl<'a> Msg<&'a pastes::Paste> {
-	pub fn paste_msg(paste: &'a pastes::Paste) -> Self {
+impl<'a> Msg<&'a models::Paste> {
+	pub fn paste_msg(paste: &'a models::Paste) -> Self {
 		Msg {
 			r#type: MsgType::Paste,
 			data: Some(paste),
@@ -181,7 +177,7 @@ pub struct UserMsg {
 #[derive(Clone)]
 pub struct User {
 	pub nick: String,
-	sender: mpsc::Sender<Bytes>,
+	pub sender: mpsc::Sender<Bytes>,
 }
 
 pub struct UserDataStream(mpsc::Receiver<Bytes>);

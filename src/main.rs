@@ -6,11 +6,22 @@ use actix_session::{CookieSession, Session};
 use actix_web::web::Data;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use serde::Deserialize;
+use diesel::prelude::*;
+use crate::pagination::Paginate;
 
 use crate::chat::Broadcaster;
+use diesel::r2d2::ConnectionManager;
+use diesel::PgConnection;
+
+type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
+
+#[macro_use]
+extern crate diesel; //Needed for ORM macros
 
 mod chat;
-mod pastes;
+mod models;
+mod pagination;
+mod schema;
 
 #[derive(Deserialize)]
 struct Config {
@@ -31,6 +42,19 @@ fn main() -> io::Result<()> {
 		toml::from_slice::<Config>(data.as_slice())?
 	};
 
+	dotenv::dotenv().or_else(|_| {
+		println!(".env not found, using .env_template");
+		dotenv::from_filename(".env_template")
+	})
+		.expect("Failed to load .env");
+
+	let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL");
+	let conn_manager = ConnectionManager::<PgConnection>::new(database_url);
+	let pool = r2d2::Pool::builder()
+		.max_size(4)
+		.build(conn_manager)
+		.expect("Failed to create Pool");
+
 	let sys = System::new(env!("CARGO_PKG_NAME"));
 
 	let broadcaster = chat::Broadcaster::new();
@@ -39,6 +63,7 @@ fn main() -> io::Result<()> {
 
 	HttpServer::new(move || {
 		App::new()
+			.data(pool.clone())
 			.wrap(CookieSession::signed(&[0; 32]).secure(false))
 			.register_data(broadcaster.clone())
 			.route("/events", web::get().to(new_client))
@@ -63,11 +88,27 @@ fn new_client(
 	params: web::Query<NewClientQueryParams>,
 	broadcaster: Data<Mutex<Broadcaster>>,
 	session: Session,
+	pool: Data<Pool>,
 ) -> Result<impl Responder, actix_web::Error> {
 	let mut broadcaster = broadcaster.lock().unwrap();
 	session.set("nick", params.nick.clone())?;
 
-	let rx = broadcaster.new_user(&params.nick);
+	let (rx, new_user) = broadcaster.new_user(&params.nick);
+
+	let pastes = {
+		use crate::schema::pastes::dsl::*;
+
+		pastes
+			.order(id.desc())
+			.paginate(1, 20)
+			.load_and_count_pages::<models::Paste>(&pool.get().unwrap())
+			.expect("Unable to load pastes")
+	};
+
+	new_user.sender
+		.clone()
+		.try_send(chat::event_data(chat::Msg::connected(&broadcaster.history, &pastes.results)))
+		.unwrap();
 
 	Ok(HttpResponse::Ok()
 		.header("content-type", "text/event-stream")
@@ -91,24 +132,47 @@ fn send_msg(
 
 #[derive(Deserialize)]
 struct NewPaste {
-	title: String,
+	filename: String,
 	content: String,
 }
 
 fn send_paste(
-	paste: web::Json<NewPaste>,
+	new_paste: web::Json<NewPaste>,
 	broadcaster: Data<Mutex<Broadcaster>>,
-  	session: Session) -> Result<impl Responder, actix_web::Error> {
-	let nick = match session.get::<String>("nick")? {
-		Some(nick) => nick,
-		None => return Ok(HttpResponse::Unauthorized()),
+	session: Session,
+	pool: Data<Pool>
+) -> Result<impl Responder, actix_web::Error> {
+	if let None = session.get::<String>("nick")? {
+		return Ok(HttpResponse::Unauthorized());
+	}
+
+	let new_paste = models::Paste {
+		id: 0,
+		filename: Some(new_paste.0.filename),
+		content: Some(new_paste.0.content),
+		creation_date: now(),
 	};
 
-	broadcaster.lock().unwrap().send_paste(pastes::Paste {
-		author: nick,
-		title: paste.0.title,
-		content: paste.0.content,
-	});
+	use crate::schema::pastes::dsl::pastes;
+	let paste = match diesel::insert_into(pastes)
+		.values(new_paste)
+		.get_result::<models::Paste>(&pool.get().unwrap())
+		{
+			Ok(paste) => paste,
+			Err(e) => {
+				println!("Error inserting new paste: {}", e);
+				return Ok(HttpResponse::InternalServerError());
+			}
+		};
+
+	broadcaster.lock().unwrap().send_paste(paste);
 
 	Ok(HttpResponse::Ok())
+}
+
+pub fn now() -> chrono::NaiveDateTime {
+	let since_unix = std::time::SystemTime::now()
+		.duration_since(std::time::UNIX_EPOCH)
+		.expect("Time went backwards");
+	chrono::NaiveDateTime::from_timestamp(since_unix.as_secs() as i64, 0)
 }

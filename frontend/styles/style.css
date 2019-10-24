@@ -175,3 +175,7 @@ textarea {
 	overflow-y: hidden;
 	white-space: pre-wrap;
 }
+
+.paste_title {
+	color: darkorange;
+}
