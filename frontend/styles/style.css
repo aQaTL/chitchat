@@ -173,5 +173,5 @@ textarea {
 .paste_content {
 	overflow-x: hidden;
 	overflow-y: hidden;
-	white-space: pre-line;
+	white-space: pre-wrap;
 }
