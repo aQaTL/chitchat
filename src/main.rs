@@ -1,15 +1,16 @@
 use std::io;
 use std::sync::Mutex;
 
+use crate::pagination::Paginate;
 use actix::System;
 use actix_session::{CookieSession, Session};
 use actix_web::web::Data;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
-use serde::Deserialize;
 use diesel::prelude::*;
-use crate::pagination::Paginate;
+use serde::Deserialize;
 
 use crate::chat::Broadcaster;
+use actix_web::middleware::Logger;
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
 
@@ -42,10 +43,11 @@ fn main() -> io::Result<()> {
 		toml::from_slice::<Config>(data.as_slice())?
 	};
 
-	dotenv::dotenv().or_else(|_| {
-		println!(".env not found, using .env_template");
-		dotenv::from_filename(".env_template")
-	})
+	dotenv::dotenv()
+		.or_else(|_| {
+			println!(".env not found, using .env_template");
+			dotenv::from_filename(".env_template")
+		})
 		.expect("Failed to load .env");
 
 	let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL");
@@ -63,16 +65,18 @@ fn main() -> io::Result<()> {
 
 	HttpServer::new(move || {
 		App::new()
+			.wrap(Logger::default())
 			.data(pool.clone())
 			.wrap(CookieSession::signed(&[0; 32]).secure(false))
 			.register_data(broadcaster.clone())
 			.route("/events", web::get().to(new_client))
 			.route("/send_msg", web::post().to(send_msg))
 			.route("/send_paste", web::post().to(send_paste))
+			.route("/get_pastes", web::get().to(get_pastes))
 			.service(actix_files::Files::new("/", "frontend").index_file("index.html"))
 	})
-		.bind(&bind_addr)?
-		.start();
+	.bind(&bind_addr)?
+	.start();
 
 	println!("Running on: {}", bind_addr);
 
@@ -88,25 +92,16 @@ fn new_client(
 	params: web::Query<NewClientQueryParams>,
 	broadcaster: Data<Mutex<Broadcaster>>,
 	session: Session,
-	pool: Data<Pool>,
 ) -> Result<impl Responder, actix_web::Error> {
 	let mut broadcaster = broadcaster.lock().unwrap();
 	session.set("nick", params.nick.clone())?;
 
 	let (rx, new_user) = broadcaster.new_user(&params.nick);
 
-	let pastes = {
-		use crate::schema::pastes::dsl::*;
-
-		pastes
-			.order(id.desc())
-			.load::<models::Paste>(&pool.get().unwrap())
-			.expect("Unable to load pastes")
-	};
-
-	new_user.sender
+	new_user
+		.sender
 		.clone()
-		.try_send(chat::event_data(chat::Msg::connected(&broadcaster.history, &pastes)))
+		.try_send(chat::event_data(chat::Msg::connected(&broadcaster.history)))
 		.unwrap();
 
 	Ok(HttpResponse::Ok()
@@ -139,10 +134,10 @@ fn send_paste(
 	new_paste: web::Json<NewPaste>,
 	broadcaster: Data<Mutex<Broadcaster>>,
 	session: Session,
-	pool: Data<Pool>
+	pool: Data<Pool>,
 ) -> Result<impl Responder, actix_web::Error> {
 	if let None = session.get::<String>("nick")? {
-		return Ok(HttpResponse::Unauthorized());
+		return Ok(HttpResponse::Unauthorized().body(""));
 	}
 
 	let new_paste = models::Paste {
@@ -156,17 +151,59 @@ fn send_paste(
 	let paste = match diesel::insert_into(pastes)
 		.values(new_paste)
 		.get_result::<models::Paste>(&pool.get().unwrap())
-		{
-			Ok(paste) => paste,
-			Err(e) => {
-				println!("Error inserting new paste: {}", e);
-				return Ok(HttpResponse::InternalServerError());
-			}
-		};
+	{
+		Ok(paste) => paste,
+		Err(e) => {
+			println!("Error inserting new paste: {}", e);
+			return Ok(HttpResponse::InternalServerError().body(""));
+		}
+	};
 
 	broadcaster.lock().unwrap().send_paste(paste);
 
-	Ok(HttpResponse::Ok())
+	Ok(HttpResponse::Ok().body(""))
+}
+
+#[derive(Deserialize)]
+struct GetPastesQuery {
+	page: Option<i64>,
+	per_page: Option<i64>,
+}
+
+fn get_pastes(
+	query: web::Query<GetPastesQuery>,
+	session: Session,
+	pool: Data<Pool>,
+) -> impl Responder {
+	if let None = session.get::<String>("nick").unwrap() {
+		return HttpResponse::Unauthorized().body("");
+	}
+
+	let db_conn = match pool.get() {
+		Ok(conn) => conn,
+		Err(e) => {
+			println!("Failed to get connection to the database: {}", e);
+			return HttpResponse::InternalServerError().body("");
+		}
+	};
+	let pastes = {
+		use crate::schema::pastes::dsl::*;
+
+		pastes
+			.order(id.desc())
+			.paginate(query.page.unwrap_or(1), query.per_page.unwrap_or(10))
+			.load_and_count_pages::<models::Paste>(&db_conn)
+	};
+	let pastes = match pastes {
+		Ok(pastes) => pastes,
+		Err(e) => {
+			println!("Error getting pastes: {}", e);
+			return HttpResponse::InternalServerError().body("");
+		}
+	};
+	HttpResponse::Ok()
+		.content_type("application/json")
+		.body(serde_json::to_string(&pastes).unwrap())
 }
 
 pub fn now() -> chrono::NaiveDateTime {

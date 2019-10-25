@@ -5,10 +5,34 @@ Vue.component("pastes", {
 		return {
 			title_input: "",
 			content_input: "",
+
+			pastes: [],
+			page: 0,
+			total_pages: 1,
 		};
 	},
 
 	methods: {
+		infiniteHandler: function($state) {
+			if (this.page < this.total_pages) {
+				let req = new XMLHttpRequest();
+				req.open("GET", `/get_pastes?page=${this.page + 1}&per_page=10`, true);
+				req.onload = () => {
+					if (req.status !== 200) {
+						$state.complete();
+						return;
+					}
+					let paginatedPastes = JSON.parse(req.responseText);
+					this.page = paginatedPastes.page;
+					this.total_pages = paginatedPastes.total_pages;
+					this.pastes.push(...paginatedPastes.results);
+					$state.loaded();
+				};
+				req.send();
+			} else {
+				$state.complete();
+			}
+		},
 		upload: function (_event) {
 			let xhr = new XMLHttpRequest();
 			xhr.open("POST", "/send_paste", true);
@@ -64,6 +88,8 @@ Vue.component("pastes", {
 				<pre class="paste_content">{{ paste.content }}</pre>
 				
 			</section>
+			
+			<infinite-loading @infinite="infiniteHandler"></infinite-loading>
 		</div>
 	</div>
 </div>
@@ -240,8 +266,7 @@ window.onload = () => (new Vue({
 				case MsgType.Connected:
 					console.log("Connected");
 
-					this.messages.push(...msg.data[0]);
-					this.pastes.push(...msg.data[1]);
+					this.messages.push(...msg.data);
 
 					localStorage.setItem("nick", this.nick);
 					this.connected = true;

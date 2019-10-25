@@ -1,7 +1,7 @@
-use diesel::prelude::*;
-use diesel::query_dsl::methods::LoadQuery;
-use diesel::query_builder::*;
 use diesel::pg::Pg;
+use diesel::prelude::*;
+use diesel::query_builder::*;
+use diesel::query_dsl::methods::LoadQuery;
 use diesel::sql_types::BigInt;
 use serde::Serialize;
 
@@ -35,8 +35,8 @@ pub struct Paginated<T> {
 
 impl<T> PaginatedQuery<T> {
 	pub fn load_and_count_pages<U>(self, conn: &PgConnection) -> QueryResult<Paginated<U>>
-		where
-			Self: LoadQuery<PgConnection, (U, i64)>,
+	where
+		Self: LoadQuery<PgConnection, (U, i64)>,
 	{
 		let per_page = self.per_page;
 		let page = self.page;
@@ -44,7 +44,11 @@ impl<T> PaginatedQuery<T> {
 		let total = results.get(0).map(|x| x.1).unwrap_or(0);
 		let results = results.into_iter().map(|x| x.0).collect();
 		let total_pages = (total as f64 / per_page as f64).ceil() as i64;
-		Ok(Paginated { page, total_pages, results })
+		Ok(Paginated {
+			page,
+			total_pages,
+			results,
+		})
 	}
 }
 
@@ -55,8 +59,8 @@ impl<T: Query> Query for PaginatedQuery<T> {
 impl<T> RunQueryDsl<PgConnection> for PaginatedQuery<T> {}
 
 impl<T> QueryFragment<Pg> for PaginatedQuery<T>
-	where
-		T: QueryFragment<Pg>,
+where
+	T: QueryFragment<Pg>,
 {
 	fn walk_ast(&self, mut out: AstPass<Pg>) -> QueryResult<()> {
 		out.push_sql("SELECT *, COUNT(*) OVER () FROM(");

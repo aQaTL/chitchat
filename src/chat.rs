@@ -1,6 +1,7 @@
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
+use crate::models;
 use actix::Arbiter;
 use actix_web::error::ErrorInternalServerError;
 use actix_web::web::{Bytes, Data};
@@ -9,7 +10,6 @@ use serde::Serialize;
 use tokio::prelude::*;
 use tokio::sync::mpsc;
 use tokio::timer::Interval;
-use crate::models;
 
 pub struct Broadcaster {
 	pub users: Vec<User>,
@@ -81,11 +81,10 @@ impl Broadcaster {
 			.collect::<Vec<User>>();
 	}
 
-	pub fn new_user<'a>(&'a mut self, nick: &str) -> (UserDataStream, &'a User) {
+	pub fn new_user(&mut self, nick: &str) -> (UserDataStream, &User) {
 		let (mut tx, rx) = mpsc::channel(100);
 
-		tx.try_send(event_data(Msg::new(MsgType::Ping)))
-			.unwrap();
+		tx.try_send(event_data(Msg::new(MsgType::Ping))).unwrap();
 
 		self.users.push(User {
 			nick: String::from(nick),
@@ -141,11 +140,11 @@ impl Msg<()> {
 	}
 }
 
-impl<'a> Msg<(&'a Vec<UserMsg>, &'a Vec<models::Paste>)> {
-	pub fn connected(history: &'a Vec<UserMsg>, pastes: &'a Vec<models::Paste>) -> Self {
+impl<'a> Msg<&'a Vec<UserMsg>> {
+	pub fn connected(history: &'a Vec<UserMsg>) -> Self {
 		Msg {
 			r#type: MsgType::Connected,
-			data: Some((history, pastes)),
+			data: Some(history),
 		}
 	}
 }
