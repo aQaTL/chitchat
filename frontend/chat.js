@@ -84,7 +84,10 @@ Vue.component("pastes", {
 				<input type="button" value="Upload" v-on:click="upload">
 			</section>
 			<section v-for="paste in pastes" class="paste" v-on:dblclick="select">
-				<span class="paste_title">{{ paste.filename }}</span>
+				<div class="paste_title_bar">
+					<span class="paste_title">{{ paste.filename }}</span>
+					<a :href="'/raw/' + paste.id">[Raw]</a>
+				</div>
 				<pre class="paste_content">{{ paste.content }}</pre>
 				
 			</section>
@@ -189,7 +192,7 @@ Vue.component("chat", {
 	<section class="full_height_flex_container" ref="messages">
 		<div class="magic">
 			<div class="message" v-for="msg in messages">
-				<span>[{{ msg.time | time }}] </span><span>{{ msg.nick }}</span>: <span>{{ msg.msg }}</span>
+				<span>[{{ msg.time | time }}] </span><span>{{ msg.nick }}</span>: <span class="msg_content">{{ msg.msg }}</span>
 			</div>
 		</div>
 	</section>

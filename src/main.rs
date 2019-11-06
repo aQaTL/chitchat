@@ -228,7 +228,7 @@ fn get_paste_raw(path: web::Path<i64>, pool: Data<Pool>) -> impl Responder {
 	};
 
 	HttpResponse::Ok()
-		.content_type("text/plain")
+		.content_type("text/plain charset=UTF-8")
 		.body(paste.content.unwrap_or_default())
 }
 

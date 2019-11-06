@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css?family=Open+Sans:400,700&display=swap');
 
+:root {
+	--text-color: #ffe4c4;
+	--primary-color: #ff8c00;
+}
+
 body {
 	background-color: #393939;
 	margin: 0;
@@ -43,7 +48,7 @@ header {
 	outline: 0;
 	background-color: #393939;
 	color: #F0F8FF;
-	border-top: 2px solid darkorange;
+	border-top: 2px solid var(--primary-color);
 }
 
 .tab-view {
@@ -73,12 +78,12 @@ header {
 }
 
 .chat_input {
-	border: 1px solid darkorange;
+	border: 1px solid var(--primary-color);
 	border-radius: 15px;
 	padding: 10px 0 10px 1em;
 	font-family: 'Open Sans', sans-serif;
 	background-color: #595959;
-	color: #F0F8FF;
+	color: var(--text-color);
 }
 
 .chat_input:focus {
@@ -87,6 +92,10 @@ header {
 
 #msg_input {
 	flex-grow: 1;
+}
+
+.msg_content {
+	color: var(--text-color);
 }
 
 .full_height_flex_container {
@@ -136,7 +145,7 @@ button, button::-moz-focus-inner {
 #paste_form input[type=text] {
 	border: none;
 	background-color: #595959;
-	color: #F0F8FF;
+	color: #ff8c00;
 	padding: 5px;
 	border-radius: 5px;
 }
@@ -144,7 +153,7 @@ button, button::-moz-focus-inner {
 #paste_form input[type=button] {
 	place-self: center;
 
-	border: 1px solid darkorange;
+	border: 1px solid var(--primary-color);
 	border-radius: 5px;
 	background-color: #292929;
 	color: #F0F8FF;
@@ -154,13 +163,13 @@ button, button::-moz-focus-inner {
 #paste_form input[type=button]:hover {
 	place-self: center;
 	border: 1px solid #F0F8FF;
-	color: darkorange;
+	color: var(--primary-color);
 	padding: 10px 50px 10px 50px;
 }
 
 textarea {
 	background-color: #595959;
-	color: #F0F8FF;
+	color: var(--text-color);
 	margin: 5px 0 5px 0;
 	border: none;
 
@@ -174,8 +183,21 @@ textarea {
 	overflow-x: hidden;
 	overflow-y: hidden;
 	white-space: pre-wrap;
+	color: var(--text-color);
 }
 
 .paste_title {
-	color: darkorange;
+	color: var(--primary-color);
+}
+
+.paste_title_bar {
+	display: flex;
+	justify-content: space-between;
+}
+
+.paste_title_bar > a {
+	text-decoration: none;
+	color: var(--text-color);
+	font-weight: bold;
+	margin-right: 5px;
 }
