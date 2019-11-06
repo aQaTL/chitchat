@@ -73,6 +73,7 @@ fn main() -> io::Result<()> {
 			.route("/send_msg", web::post().to(send_msg))
 			.route("/send_paste", web::post().to(send_paste))
 			.route("/get_pastes", web::get().to(get_pastes))
+			.route("/raw/{id}", web::get().to(get_paste_raw))
 			.service(actix_files::Files::new("/", "frontend").index_file("index.html"))
 	})
 	.bind(&bind_addr)?
@@ -204,6 +205,31 @@ fn get_pastes(
 	HttpResponse::Ok()
 		.content_type("application/json")
 		.body(serde_json::to_string(&pastes).unwrap())
+}
+
+fn get_paste_raw(path: web::Path<i64>, pool: Data<Pool>) -> impl Responder {
+	let requested_id = *path;
+
+	let db_conn = match pool.get() {
+		Ok(conn) => conn,
+		Err(e) => {
+			println!("Failed to get connection to the database: {}", e);
+			return HttpResponse::InternalServerError().body("");
+		}
+	};
+
+	let paste = {
+		use crate::schema::pastes::dsl::*;
+
+		pastes
+			.filter(id.eq(requested_id))
+			.first::<models::Paste>(&db_conn)
+			.expect("Database error")
+	};
+
+	HttpResponse::Ok()
+		.content_type("text/plain")
+		.body(paste.content.unwrap_or_default())
 }
 
 pub fn now() -> chrono::NaiveDateTime {
