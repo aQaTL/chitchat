@@ -2,7 +2,7 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use crate::models;
-use actix::{Addr, Arbiter};
+use actix::Arbiter;
 use actix_web::error::ErrorInternalServerError;
 use actix_web::web::{Bytes, Data};
 use chrono::{prelude::*, Datelike, TimeZone};
@@ -84,7 +84,7 @@ impl Broadcaster {
 			.collect::<Vec<User>>();
 	}
 
-	pub fn new_user(&mut self, nick: &str) -> (UserDataStream, &User) {
+	pub fn new_user(&mut self, nick: &str) -> (UserDataStream, &mut User) {
 		let (mut tx, rx) = mpsc::channel(100);
 
 		tx.try_send(event_data(Msg::new(MsgType::Ping))).unwrap();
@@ -96,7 +96,7 @@ impl Broadcaster {
 			sender: tx.clone(),
 		});
 
-		(UserDataStream(rx), &self.users.last().unwrap())
+		(UserDataStream(rx), self.users.last_mut().unwrap())
 	}
 
 	pub fn send(&mut self, id: u64, msg: String) {
@@ -171,6 +171,13 @@ impl<'a> Msg<&'a str> {
 		Msg {
 			r#type: MsgType::ColorChange,
 			data: Some(color),
+		}
+	}
+
+	pub fn nick_change_msg(nick: &'a str) -> Self {
+		Msg {
+			r#type: MsgType::NickChange,
+			data: Some(nick),
 		}
 	}
 }

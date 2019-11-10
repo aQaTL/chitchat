@@ -62,14 +62,14 @@ fn main() -> io::Result<()> {
 
 	let bind_addr = format!("{}:{}", config.ip, config.port);
 
+	let mut gen = rand::thread_rng();
+	let cookie_key = (0..64)
+		.into_iter()
+		.map(|_| gen.gen::<u8>())
+		.collect::<Vec<u8>>();
+
 	HttpServer::new(move || {
 		use handlers::*;
-
-		let mut gen = rand::thread_rng();
-		let cookie_key = (0..64)
-			.into_iter()
-			.map(|_| gen.gen::<u8>())
-			.collect::<Vec<u8>>();
 
 		App::new()
 			.wrap(Logger::default())
@@ -105,6 +105,7 @@ mod handlers {
 	#[derive(Deserialize)]
 	pub struct NewClientQueryParams {
 		nick: String,
+		color: Option<String>,
 	}
 
 	pub fn new_client(
@@ -113,11 +114,13 @@ mod handlers {
 		session: Session,
 	) -> Result<impl Responder, actix_web::Error> {
 		let mut broadcaster = broadcaster.lock().unwrap();
-		session.set("nick", params.nick.clone())?;
+		session.set("nick", params.nick.clone()).unwrap();
 
 		let (rx, new_user) = broadcaster.new_user(&params.nick);
 
-		session.set("id", new_user.id);
+		session.set("id", new_user.id).unwrap();
+
+		new_user.color = params.color.clone();
 
 		new_user
 			.sender
@@ -138,11 +141,11 @@ mod handlers {
 	) -> Result<impl Responder, actix_web::Error> {
 		let id = match session.get::<u64>("id")? {
 			Some(id) => id,
-			None => return Ok(HttpResponse::Unauthorized()),
+			None => return Ok(HttpResponse::Unauthorized().body("")),
 		};
 		broadcaster.lock().unwrap().send(id, msg.0.clone());
 
-		Ok(HttpResponse::Ok())
+		Ok(HttpResponse::Ok().body(""))
 	}
 
 	#[derive(Deserialize)]
@@ -262,24 +265,30 @@ mod handlers {
 		cmd: web::Json<ChatCommand>,
 		session: Session,
 		broadcaster: Data<Mutex<Broadcaster>>,
-	) -> impl Responder {
-		if let None = session.get::<String>("nick").unwrap() {
-			return HttpResponse::Unauthorized().body("");
-		}
+	) -> Result<impl Responder, actix_web::Error> {
+		let id = match session.get::<u64>("id")? {
+			Some(id) => id,
+			None => return Ok(HttpResponse::Unauthorized().body("")),
+		};
+		let mut broadcaster = broadcaster.lock().unwrap();
+		let user = &mut broadcaster.users.iter_mut().find(|u| u.id == id).unwrap();
 
 		match cmd.0 {
 			ChatCommand::Color(color) => {
-				let id: u64 = session.get("id").unwrap().unwrap();
-				let mut broadcaster = broadcaster.lock().unwrap();
-				let user = &mut broadcaster.users.iter_mut().find(|u| u.id == id).unwrap();
 				user.sender
 					.try_send(chat::event_data(chat::Msg::color_change_msg(&color)))
 					.unwrap();
 				user.color = Some(color);
 			}
-			ChatCommand::Nick(nick) => session.set("nick", nick).expect("Failed to change nick"),
+			ChatCommand::Nick(nick) => {
+				session.set("nick", &nick).expect("Failed to change nick");
+				user.sender
+					.try_send(chat::event_data(chat::Msg::nick_change_msg(&nick)))
+					.unwrap();
+				user.nick = nick;
+			}
 		}
-		HttpResponse::Ok().body("")
+		Ok(HttpResponse::Ok().body(""))
 	}
 
 	pub fn now() -> chrono::NaiveDateTime {

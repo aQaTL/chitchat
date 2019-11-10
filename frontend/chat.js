@@ -1,5 +1,5 @@
 Vue.component("pastes", {
-	props: ["nick", "pastes"],
+	props: ["user", "pastes"],
 
 	data: function () {
 		return {
@@ -13,7 +13,7 @@ Vue.component("pastes", {
 	},
 
 	methods: {
-		infiniteHandler: function($state) {
+		infiniteHandler: function ($state) {
 			if (this.page < this.total_pages) {
 				let req = new XMLHttpRequest();
 				req.open("GET", `/get_pastes?page=${this.page + 1}&per_page=10`, true);
@@ -116,9 +116,10 @@ Vue.component("connect-form", {
 
 	mounted() {
 		let nick = localStorage.getItem("nick");
+		let color = localStorage.getItem("color");
 		if (nick !== null) {
 			this.nick = nick;
-			this.$emit("connect", this.nick);
+			this.$emit("connect", {nick: this.nick, color: color || ""});
 		}
 	},
 
@@ -145,7 +146,7 @@ const MsgType = {
 };
 
 Vue.component("chat", {
-	props: ["nick", "messages"],
+	props: ["user", "messages"],
 
 	data: function () {
 		return {
@@ -171,7 +172,7 @@ Vue.component("chat", {
 				this.send_msg();
 			}
 		},
-		send_msg: function() {
+		send_msg: function () {
 			let xhr = new XMLHttpRequest();
 			xhr.open("POST", "/send_msg", true);
 			xhr.onload = () => {
@@ -184,7 +185,7 @@ Vue.component("chat", {
 			xhr.setRequestHeader("content-type", "application/json");
 			xhr.send(JSON.stringify(this.user_msg));
 		},
-		send_cmd: function() {
+		send_cmd: function () {
 			let xhr = new XMLHttpRequest();
 			xhr.open("POST", "/send_cmd", true);
 			xhr.onload = () => {
@@ -228,7 +229,7 @@ Vue.component("chat", {
 		</div>
 	</section>
 	<section id="input">
-		<label for="msg_input">{{ nick }}</label>
+		<label for="msg_input" v-bind:style="{ color: user.color || 'var(--default-nick-color)' }">{{ user.nick }}</label>
 		<input 
 			type="text"
 			v-model="user_msg"
@@ -251,7 +252,10 @@ window.onload = () => (new Vue({
 		connected: false,
 		has_unread_msg: false,
 
-		nick: "",
+		user: {
+			nick: "",
+			color: "",
+		},
 		messages: [],
 		pastes: [],
 	},
@@ -261,12 +265,12 @@ window.onload = () => (new Vue({
 			switch (this.current_tab) {
 				case "chat":
 					return {
-						nick: this.nick,
+						user: this.user,
 						messages: this.messages,
 					};
 				case "pastes":
 					return {
-						nick: this.nick,
+						user: this.user,
 						pastes: this.pastes,
 					};
 				case "settings":
@@ -280,13 +284,14 @@ window.onload = () => (new Vue({
 	},
 
 	methods: {
-		handle_connect: function (nick) {
-			this.nick = nick;
-			console.log(`connecting as ${this.nick}`);
+		handle_connect: function (user) {
+			this.user = user;
+			console.log("connecting as", this.user);
 			this.connect();
 		},
 		connect: function () {
-			this.eventSource = new EventSource(encodeURI(`/events?nick=${this.nick}`));
+			this.eventSource = new EventSource(encodeURI(
+				`/events?nick=${this.user.nick}&color=${this.user.color}`));
 
 			this.eventSource.onopen = event => console.log(event);
 			this.eventSource.onerror = event => console.log(event);
@@ -302,7 +307,7 @@ window.onload = () => (new Vue({
 
 					this.messages.push(...msg.data);
 
-					localStorage.setItem("nick", this.nick);
+					localStorage.setItem("nick", this.user.nick);
 					this.connected = true;
 
 					break;
@@ -319,7 +324,12 @@ window.onload = () => (new Vue({
 
 					break;
 				case MsgType.ColorChange:
-					console.log("New color: ", msg.data);
+					this.user.color = msg.data;
+					localStorage.setItem("color", this.user.color);
+					break;
+				case MsgType.NickChange:
+					this.user.nick = msg.data;
+					localStorage.setItem("nick", this.user.nick);
 					break;
 				default:
 					console.log("Unknown type: ", msg.type);
