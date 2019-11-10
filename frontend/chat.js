@@ -140,6 +140,8 @@ const MsgType = {
 	Ping: "Ping",
 	Message: "Message",
 	Paste: "Paste",
+	NickChange: "NickChange",
+	ColorChange: "ColorChange",
 };
 
 Vue.component("chat", {
@@ -162,7 +164,14 @@ Vue.component("chat", {
 	},
 
 	methods: {
-		send_msg: function () {
+		send: function () {
+			if (this.user_msg.startsWith("/")) {
+				this.send_cmd();
+			} else {
+				this.send_msg();
+			}
+		},
+		send_msg: function() {
 			let xhr = new XMLHttpRequest();
 			xhr.open("POST", "/send_msg", true);
 			xhr.onload = () => {
@@ -174,6 +183,28 @@ Vue.component("chat", {
 			};
 			xhr.setRequestHeader("content-type", "application/json");
 			xhr.send(JSON.stringify(this.user_msg));
+		},
+		send_cmd: function() {
+			let xhr = new XMLHttpRequest();
+			xhr.open("POST", "/send_cmd", true);
+			xhr.onload = () => {
+				this.user_msg = "";
+				if (xhr.status !== 200) {
+					console.log("request failed");
+				}
+			};
+			xhr.setRequestHeader("content-type", "application/json");
+
+			let msg_split = this.user_msg.split(" ");
+			let cmd = msg_split[0].charAt(1).toUpperCase() + msg_split[0].slice(2);
+
+			let payload = {};
+			payload[cmd] = msg_split.slice(1).join(" ");
+
+			let payload_json = JSON.stringify(payload);
+			console.log(`Payload: ${payload_json}`);
+
+			xhr.send(payload_json);
 		},
 		scroll_to_bottom: function () {
 			Vue.nextTick(() => {
@@ -192,7 +223,7 @@ Vue.component("chat", {
 	<section class="full_height_flex_container" ref="messages">
 		<div class="magic">
 			<div class="message" v-for="msg in messages">
-				<span>[{{ msg.time | time }}] </span><span>{{ msg.nick }}</span>: <span class="msg_content">{{ msg.msg }}</span>
+				<span>[{{ msg.time | time }}] </span><span v-bind:style="{ color: msg.custom_nick_color || 'var(--default-nick-color)' }">{{ msg.nick }}</span>: <span class="msg_content">{{ msg.msg }}</span>
 			</div>
 		</div>
 	</section>
@@ -203,7 +234,7 @@ Vue.component("chat", {
 			v-model="user_msg"
 			id="msg_input"
 			class="chat_input"
-			v-on:keyup.enter="send_msg()">
+			v-on:keyup.enter="send()">
 	</section>
 </div>
 `,
@@ -287,8 +318,11 @@ window.onload = () => (new Vue({
 					this.notify();
 
 					break;
+				case MsgType.ColorChange:
+					console.log("New color: ", msg.data);
+					break;
 				default:
-					console.log("Unknown type");
+					console.log("Unknown type: ", msg.type);
 					break;
 			}
 		},

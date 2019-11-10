@@ -13,6 +13,7 @@ use crate::chat::Broadcaster;
 use actix_web::middleware::Logger;
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
+use rand::Rng;
 
 #[macro_use]
 extern crate diesel; //Needed for ORM macros
@@ -64,17 +65,23 @@ fn main() -> io::Result<()> {
 	HttpServer::new(move || {
 		use handlers::*;
 
+		let mut gen = rand::thread_rng();
+		let cookie_key = (0..64)
+			.into_iter()
+			.map(|_| gen.gen::<u8>())
+			.collect::<Vec<u8>>();
+
 		App::new()
 			.wrap(Logger::default())
 			.data(pool.clone())
-			.wrap(CookieSession::signed(&[0; 32]).secure(false))
+			.wrap(CookieSession::signed(&cookie_key).secure(false))
 			.register_data(broadcaster.clone())
 			.route("/events", web::get().to(new_client))
 			.route("/send_msg", web::post().to(send_msg))
 			.route("/send_paste", web::post().to(send_paste))
 			.route("/get_pastes", web::get().to(get_pastes))
 			.route("/raw/{id}", web::get().to(get_paste_raw))
-			.route("/chat_command", web::post().to(chat_command))
+			.route("/send_cmd", web::post().to(chat_command))
 			.service(actix_files::Files::new("/", "frontend").index_file("index.html"))
 	})
 	.bind(&bind_addr)?
@@ -110,6 +117,8 @@ mod handlers {
 
 		let (rx, new_user) = broadcaster.new_user(&params.nick);
 
+		session.set("id", new_user.id);
+
 		new_user
 			.sender
 			.clone()
@@ -127,11 +136,11 @@ mod handlers {
 		broadcaster: Data<Mutex<Broadcaster>>,
 		session: Session,
 	) -> Result<impl Responder, actix_web::Error> {
-		let nick = match session.get::<String>("nick")? {
-			Some(nick) => nick,
+		let id = match session.get::<u64>("id")? {
+			Some(id) => id,
 			None => return Ok(HttpResponse::Unauthorized()),
 		};
-		broadcaster.lock().unwrap().send(nick, msg.0.clone());
+		broadcaster.lock().unwrap().send(id, msg.0.clone());
 
 		Ok(HttpResponse::Ok())
 	}
@@ -243,8 +252,34 @@ mod handlers {
 			.body(paste.content.unwrap_or_default())
 	}
 
-	pub fn chat_command() -> impl Responder {
-		""
+	#[derive(Deserialize)]
+	pub enum ChatCommand {
+		Color(String),
+		Nick(String),
+	}
+
+	pub fn chat_command(
+		cmd: web::Json<ChatCommand>,
+		session: Session,
+		broadcaster: Data<Mutex<Broadcaster>>,
+	) -> impl Responder {
+		if let None = session.get::<String>("nick").unwrap() {
+			return HttpResponse::Unauthorized().body("");
+		}
+
+		match cmd.0 {
+			ChatCommand::Color(color) => {
+				let id: u64 = session.get("id").unwrap().unwrap();
+				let mut broadcaster = broadcaster.lock().unwrap();
+				let user = &mut broadcaster.users.iter_mut().find(|u| u.id == id).unwrap();
+				user.sender
+					.try_send(chat::event_data(chat::Msg::color_change_msg(&color)))
+					.unwrap();
+				user.color = Some(color);
+			}
+			ChatCommand::Nick(nick) => session.set("nick", nick).expect("Failed to change nick"),
+		}
+		HttpResponse::Ok().body("")
 	}
 
 	pub fn now() -> chrono::NaiveDateTime {

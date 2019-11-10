@@ -3,6 +3,7 @@
 :root {
 	--text-color: #ffe4c4;
 	--primary-color: #ff8c00;
+	--default-nick-color: #ffffff;
 }
 
 body {

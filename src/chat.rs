@@ -2,14 +2,17 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use crate::models;
-use actix::Arbiter;
+use actix::{Addr, Arbiter};
 use actix_web::error::ErrorInternalServerError;
 use actix_web::web::{Bytes, Data};
 use chrono::{prelude::*, Datelike, TimeZone};
 use serde::Serialize;
+use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::prelude::*;
 use tokio::sync::mpsc;
 use tokio::timer::Interval;
+
+static ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 pub struct Broadcaster {
 	pub users: Vec<User>,
@@ -87,16 +90,21 @@ impl Broadcaster {
 		tx.try_send(event_data(Msg::new(MsgType::Ping))).unwrap();
 
 		self.users.push(User {
+			id: ID_COUNTER.fetch_add(1, Ordering::SeqCst),
 			nick: String::from(nick),
+			color: None,
 			sender: tx.clone(),
 		});
 
 		(UserDataStream(rx), &self.users.last().unwrap())
 	}
 
-	pub fn send(&mut self, nick: String, msg: String) {
+	pub fn send(&mut self, id: u64, msg: String) {
+		let user = self.users.iter_mut().find(|u| u.id == id).unwrap();
+
 		let user_msg = UserMsg {
-			nick,
+			nick: user.nick.clone(),
+			custom_nick_color: user.color.clone(),
 			msg,
 			time: Utc::now(),
 		};
@@ -158,24 +166,38 @@ impl<'a> Msg<&'a models::Paste> {
 	}
 }
 
+impl<'a> Msg<&'a str> {
+	pub fn color_change_msg(color: &'a str) -> Self {
+		Msg {
+			r#type: MsgType::ColorChange,
+			data: Some(color),
+		}
+	}
+}
+
 #[derive(Serialize)]
 enum MsgType {
 	Connected,
 	Ping,
 	Message,
 	Paste,
+	NickChange,
+	ColorChange,
 }
 
 #[derive(Serialize)]
 pub struct UserMsg {
 	pub nick: String,
+	pub custom_nick_color: Option<String>,
 	pub msg: String,
 	pub time: DateTime<Utc>,
 }
 
 #[derive(Clone)]
 pub struct User {
+	pub id: u64,
 	pub nick: String,
+	pub color: Option<String>,
 	pub sender: mpsc::Sender<Bytes>,
 }
 
