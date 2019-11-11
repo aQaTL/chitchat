@@ -114,7 +114,7 @@ mod handlers {
 		session: Session,
 	) -> Result<impl Responder, actix_web::Error> {
 		let mut broadcaster = broadcaster.lock().unwrap();
-		session.set("nick", params.nick.clone()).unwrap();
+		session.set("nick", &params.nick).unwrap();
 
 		let (rx, new_user) = broadcaster.new_user(&params.nick);
 
