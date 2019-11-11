@@ -132,7 +132,7 @@ Vue.component("connect-form", {
 		placeholder="Nick"
 		v-model="nick"
 		class="chat_input"
-		v-on:keyup.enter="$emit('connect', {nick, color: color || ''})">
+		v-on:keyup.enter="$emit('connect', {nick, color: ''})">
 </div>`,
 });
 
