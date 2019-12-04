@@ -204,5 +204,7 @@ textarea {
 }
 
 #info_tab {
+	display: flex;
+	align-items: center;
 	text-align: center;
 }
