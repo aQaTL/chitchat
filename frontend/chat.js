@@ -99,10 +99,11 @@ Vue.component("pastes", {
 	`,
 });
 
-Vue.component("settings", {
+Vue.component("info", {
 	template: `
-<div>
-	<h1>Hello, World!</h1>
+<div id="info_tab">
+	<img src="subs.png" alt="Substitutions">
+	<img src="timetable.png" alt="Timetable">	
 </div>
 	`,
 });
@@ -246,7 +247,7 @@ window.onload = () => (new Vue({
 
 	data: {
 		current_tab: "chat",
-		tabs: ["chat", "pastes", "settings"],
+		tabs: ["chat", "pastes", "info"],
 
 		eventSource: null,
 		connected: false,
@@ -273,7 +274,7 @@ window.onload = () => (new Vue({
 						user: this.user,
 						pastes: this.pastes,
 					};
-				case "settings":
+				case "info":
 					return {};
 			}
 		},
