@@ -11,15 +11,18 @@ license = "MIT"
 actix = "0.8"
 actix-web = "1.0"
 actix-files = "0.1"
-actix-web-actors = "1.0"
+actix-web-actors = "2.0.0"
 actix-session = "0.2"
 rand = "*"
 toml = "0.5"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde = { version = "1.0.106", features = ["derive"] }
+serde_json = "1.0.51"
 #sockjs = { git = "https://github.com/aqatl/sockjs", branch = "0.4.0-hotfix" }
 tokio = "0.1"
 chrono = { version = "0.4", features = ["serde"] }
 diesel = { version = "1.4", features = ["r2d2", "postgres", "chrono"] }
 r2d2 = "0.8"
 dotenv = "0.10"
+ffsend-api = { version = "0.4.4"}
+openssl-probe = "0.1"
+url = "1.7"
