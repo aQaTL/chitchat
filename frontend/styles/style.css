@@ -127,7 +127,7 @@ button, button::-moz-focus-inner {
 #pastes {
 	display: grid;
 	grid-auto-flow: row;
-	grid-template-columns: 1fr;
+	grid-template-columns: fit-content(1fr);
 	grid-gap: 20px;
 }
 
@@ -177,14 +177,15 @@ textarea {
 }
 
 .paste {
-	background: #494949;
+	overflow: hidden;
 }
 
 .paste_content {
-	overflow-x: hidden;
-	overflow-y: hidden;
+	overflow-x: hidden !important;
+	overflow-y: hidden !important;
 	white-space: pre-wrap;
-	color: var(--text-color);
+	border-bottom-left-radius: 10px;
+	border-bottom-right-radius: 10px;
 }
 
 .paste_title {

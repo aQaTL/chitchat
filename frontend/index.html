@@ -8,6 +8,11 @@
 	<link rel="stylesheet" href="styles/style.css">
 	<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.min.js"></script>
 	<script src="https://unpkg.com/vue-infinite-loading@^2/dist/vue-infinite-loading.js"></script>
+
+	<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/tomorrow-night.min.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js"></script>
+
 	<script src="chat.js"></script>
 </head>
 <body>
@@ -17,7 +22,7 @@
 					v-for="tab in tabs"
 					v-bind:key="tab"
 					v-bind:class="['tab_button', { active: current_tab === tab }]"
-					v-on:click="current_tab = tab"
+					v-on:click="change_tab(tab)"
 			>{{ tab }}
 			</button>
 		</header>

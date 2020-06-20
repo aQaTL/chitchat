@@ -88,7 +88,10 @@ Vue.component("pastes", {
 					<span class="paste_title">{{ paste.filename }}</span>
 					<a :href="'/raw/' + paste.id">[Raw]</a>
 				</div>
-				<pre class="paste_content">{{ paste.content }}</pre>
+				<div class="paste_content hljs">
+					<pre v-html="hljs.highlightAuto(paste.content).value">
+					</pre>
+				</div>
 				
 			</section>
 			
@@ -285,6 +288,10 @@ window.onload = () => (new Vue({
 	},
 
 	methods: {
+		change_tab: function (tab) {
+			this.current_tab = tab;
+			localStorage.setItem("last_tab", tab);
+		},
 		handle_connect: function (user) {
 			this.user = user;
 			console.log("connecting as", this.user);
@@ -309,6 +316,12 @@ window.onload = () => (new Vue({
 					this.messages.push(...msg.data);
 
 					localStorage.setItem("nick", this.user.nick);
+
+					let last_tab = localStorage.getItem("last_tab");
+					if (last_tab) {
+						this.current_tab = last_tab;
+					}
+
 					this.connected = true;
 
 					break;

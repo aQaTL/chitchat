@@ -77,8 +77,6 @@ fn try_ffsend_upload() -> io::Result<()> {
 }
 
 fn main() -> io::Result<()> {
-    try_ffsend_upload()?;
-
     let config = {
         let data = match std::fs::read("config.toml") {
             Ok(data) => data,
@@ -297,6 +295,14 @@ mod handlers {
                 .first::<models::Paste>(&db_conn)
                 .expect("Database error")
         };
+
+		//TODO
+
+        // let rendered_page = format!(
+        //     include_str!("raw"),
+        //     title = paste.filename.unwrap_or(paste.id.to_string()),
+        //     content = paste.content.unwrap_or_default(),
+        // );
 
         HttpResponse::Ok()
             .content_type("text/plain charset=UTF-8")

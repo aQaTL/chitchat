@@ -1,0 +1,5 @@
+[build]
+rustflags = []
+
+[profile.release]
+lto = true
