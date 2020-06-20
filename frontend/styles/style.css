@@ -137,6 +137,18 @@ button, button::-moz-focus-inner {
 	}
 }
 
+@media screen and (max-width: 1000px) {
+	.paste_content {
+		overflow-x: scroll !important;
+	}
+}
+
+@media screen and (min-width: 1000px) {
+	.paste_content {
+		overflow-x: hidden !important;
+	}
+}
+
 #paste_form {
 	display: flex;
 	flex-direction: column;
@@ -181,7 +193,6 @@ textarea {
 }
 
 .paste_content {
-	overflow-x: hidden !important;
 	overflow-y: hidden !important;
 	white-space: pre-wrap;
 	border-bottom-left-radius: 10px;
