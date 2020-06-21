@@ -2,7 +2,6 @@ use std::io;
 use std::sync::Mutex;
 
 use crate::pagination::Paginate;
-use actix::System;
 use actix_session::CookieSession;
 use actix_web::web::Data;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
@@ -31,7 +30,7 @@ struct Config {
     port: u16,
 }
 
-fn try_ffsend_upload() -> io::Result<()> {
+fn _try_ffsend_upload() -> io::Result<()> {
     use ffsend_api::{
         action::{params::*, upload::*},
         api::Version,
@@ -76,7 +75,8 @@ fn try_ffsend_upload() -> io::Result<()> {
     Ok(())
 }
 
-fn main() -> io::Result<()> {
+#[actix_rt::main]
+async fn main() -> io::Result<()> {
     let config = {
         let data = match std::fs::read("config.toml") {
             Ok(data) => data,
@@ -103,8 +103,6 @@ fn main() -> io::Result<()> {
         .build(conn_manager)
         .expect("Failed to create Pool");
 
-    let sys = System::new(env!("CARGO_PKG_NAME"));
-
     let broadcaster = chat::Broadcaster::new();
 
     let bind_addr = format!("{}:{}", config.ip, config.port);
@@ -115,14 +113,14 @@ fn main() -> io::Result<()> {
         .map(|_| gen.gen::<u8>())
         .collect::<Vec<u8>>();
 
-    HttpServer::new(move || {
+    let server = HttpServer::new(move || {
         use handlers::*;
 
         App::new()
             .wrap(Logger::default())
             .data(pool.clone())
             .wrap(CookieSession::signed(&cookie_key).secure(false))
-            .register_data(broadcaster.clone())
+            .app_data(broadcaster.clone())
             .route("/events", web::get().to(new_client))
             .route("/send_msg", web::post().to(send_msg))
             .route("/send_paste", web::post().to(send_paste))
@@ -132,11 +130,11 @@ fn main() -> io::Result<()> {
             .service(actix_files::Files::new("/", "frontend").index_file("index.html"))
     })
     .bind(&bind_addr)?
-    .start();
+    .run();
 
     println!("Running on: {}", bind_addr);
 
-    sys.run()
+    server.await
 }
 
 mod handlers {
@@ -154,7 +152,7 @@ mod handlers {
         color: Option<String>,
     }
 
-    pub fn new_client(
+    pub async fn new_client(
         params: web::Query<NewClientQueryParams>,
         broadcaster: Data<Mutex<Broadcaster>>,
         session: Session,
@@ -180,7 +178,7 @@ mod handlers {
             .streaming(rx))
     }
 
-    pub fn send_msg(
+    pub async fn send_msg(
         msg: web::Json<String>,
         broadcaster: Data<Mutex<Broadcaster>>,
         session: Session,
@@ -200,7 +198,7 @@ mod handlers {
         content: String,
     }
 
-    pub fn send_paste(
+    pub async fn send_paste(
         new_paste: web::Json<NewPaste>,
         broadcaster: Data<Mutex<Broadcaster>>,
         session: Session,
@@ -240,7 +238,7 @@ mod handlers {
         per_page: Option<i64>,
     }
 
-    pub fn get_pastes(
+    pub async fn get_pastes(
         query: web::Query<GetPastesQuery>,
         session: Session,
         pool: Data<Pool>,
@@ -276,7 +274,7 @@ mod handlers {
             .body(serde_json::to_string(&pastes).unwrap())
     }
 
-    pub fn get_paste_raw(path: web::Path<i64>, pool: Data<Pool>) -> impl Responder {
+    pub async fn get_paste_raw(path: web::Path<i64>, pool: Data<Pool>) -> impl Responder {
         let requested_id = *path;
 
         let db_conn = match pool.get() {
@@ -296,7 +294,7 @@ mod handlers {
                 .expect("Database error")
         };
 
-		//TODO
+        //TODO
 
         // let rendered_page = format!(
         //     include_str!("raw"),
@@ -315,7 +313,7 @@ mod handlers {
         Nick(String),
     }
 
-    pub fn chat_command(
+    pub async fn chat_command(
         cmd: web::Json<ChatCommand>,
         session: Session,
         broadcaster: Data<Mutex<Broadcaster>>,

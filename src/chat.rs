@@ -3,14 +3,15 @@ use std::time::{Duration, Instant};
 
 use crate::models;
 use actix::Arbiter;
-use actix_web::error::ErrorInternalServerError;
 use actix_web::web::{Bytes, Data};
 use chrono::{prelude::*, Datelike, TimeZone};
 use serde::Serialize;
 use std::sync::atomic::{AtomicU64, Ordering};
-use tokio::prelude::*;
+use std::task::Context;
+use tokio::macros::support::{Pin, Poll};
+use tokio::stream::Stream;
 use tokio::sync::mpsc;
-use tokio::timer::Interval;
+use tokio::time;
 
 static ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 
@@ -37,17 +38,22 @@ impl Broadcaster {
     }
 
     fn start_heartbeat(broadcaster: Data<Mutex<Broadcaster>>) {
-        let task = Interval::new(Instant::now(), Duration::from_secs(10))
-            .for_each(move |_instant| {
-                broadcaster.lock().unwrap().remove_dead_users();
-                Ok(())
-            })
-            .map_err(|e| println!("Heartbeat error: {}", e));
+        Arbiter::spawn(Self::heartbeat(broadcaster));
+    }
 
-        Arbiter::spawn(task)
+    async fn heartbeat(broadcaster: Data<Mutex<Broadcaster>>) {
+        let mut timer = time::interval(Duration::from_secs(10));
+        loop {
+            let _ = timer.tick().await;
+            broadcaster.lock().unwrap().remove_dead_users();
+        }
     }
 
     fn start_history_cleaner(broadcaster: Data<Mutex<Broadcaster>>) {
+        Arbiter::spawn(Self::history_cleaner(broadcaster));
+    }
+
+    async fn history_cleaner(broadcaster: Data<Mutex<Broadcaster>>) {
         let now = chrono::Local::now();
         let midnight = chrono::Local
             .ymd(now.year(), now.month(), now.day())
@@ -55,14 +61,14 @@ impl Broadcaster {
         let now_std = Instant::now();
         let i = now_std + ((midnight - now).to_std().expect("Failed to calc date"));
 
-        let task = Interval::new(i, Duration::from_secs(60 * 60 * 24))
-            .for_each(move |_instant| {
-                broadcaster.lock().unwrap().history.clear();
-                Ok(())
-            })
-            .map_err(|_| ());
-
-        Arbiter::spawn(task);
+        let mut timer = time::interval_at(
+            time::Instant::from_std(i),
+            Duration::from_secs(60 * 60 * 24),
+        );
+        loop {
+            let _ = timer.tick().await;
+            broadcaster.lock().unwrap().history.clear();
+        }
     }
 
     fn remove_dead_users(&mut self) {
@@ -211,11 +217,10 @@ pub struct User {
 pub struct UserDataStream(mpsc::Receiver<Bytes>);
 
 impl Stream for UserDataStream {
-    type Item = Bytes;
-    type Error = actix_web::Error;
+    type Item = Result<Bytes, actix_web::Error>;
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        self.0.poll().map_err(ErrorInternalServerError)
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        self.0.poll_recv(cx).map(|opt| opt.map(|b| Ok(b)))
     }
 }
 
