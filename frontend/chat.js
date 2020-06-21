@@ -68,6 +68,17 @@ Vue.component("pastes", {
 		},
 	},
 
+	watch: {
+		pastes: function (_value) {
+			this.pastes.forEach(paste => {
+				if (!paste.rendered) {
+					console.log("rendering id: " + paste.id);
+					paste.rendered = hljs.highlightAuto(paste.content).value;
+				}
+			})
+		},
+	},
+
 	template: `
 <div class="full_height_flex_container">
 	<div class="magic">
@@ -89,7 +100,7 @@ Vue.component("pastes", {
 					<a :href="'/raw/' + paste.id">[Raw]</a>
 				</div>
 				<div class="paste_content hljs">
-					<pre v-html="hljs.highlightAuto(paste.content).value">
+					<pre v-html="paste.rendered">
 					</pre>
 				</div>
 				
