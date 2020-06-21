@@ -96,7 +96,7 @@ Vue.component("pastes", {
 			</section>
 			<section v-for="paste in pastes" class="paste" v-on:dblclick="select">
 				<div class="paste_title_bar">
-					<span class="paste_title">{{ paste.filename }}</span>
+					<a class="paste_title" :href="'/paste/' + paste.id">{{ paste.filename }}</a>
 					<a :href="'/raw/' + paste.id">[Raw]</a>
 				</div>
 				<div class="paste_content hljs">

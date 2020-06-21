@@ -28,3 +28,4 @@ dotenv = "0.10"
 ffsend-api = { version = "0.4.4"}
 openssl-probe = "0.1"
 url = "1.7"
+v_htmlescape = "0.8.0"

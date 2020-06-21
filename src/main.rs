@@ -20,6 +20,7 @@ use std::time::Duration;
 extern crate diesel; //Needed for ORM macros
 
 mod chat;
+mod get_paste;
 mod models;
 mod pagination;
 mod schema;
@@ -126,6 +127,7 @@ async fn main() -> io::Result<()> {
             .route("/send_paste", web::post().to(send_paste))
             .route("/get_pastes", web::get().to(get_pastes))
             .route("/raw/{id}", web::get().to(get_paste_raw))
+            .route("/paste/{id}", web::get().to(get_paste))
             .route("/send_cmd", web::post().to(chat_command))
             .service(actix_files::Files::new("/", "frontend").index_file("index.html"))
     })
@@ -294,17 +296,44 @@ mod handlers {
                 .expect("Database error")
         };
 
-        //TODO
-
-        // let rendered_page = format!(
-        //     include_str!("raw"),
-        //     title = paste.filename.unwrap_or(paste.id.to_string()),
-        //     content = paste.content.unwrap_or_default(),
-        // );
-
         HttpResponse::Ok()
             .content_type("text/plain charset=UTF-8")
             .body(paste.content.unwrap_or_default())
+    }
+
+    pub async fn get_paste(path: web::Path<i64>, pool: Data<Pool>) -> impl Responder {
+        let requested_id = *path;
+
+        let db_conn = match pool.get() {
+            Ok(conn) => conn,
+            Err(e) => {
+                println!("Failed to get connection to the database: {}", e);
+                return HttpResponse::InternalServerError().body("");
+            }
+        };
+
+        let paste: models::Paste = {
+            use crate::schema::pastes::dsl::*;
+
+            pastes
+                .filter(id.eq(requested_id))
+                .first::<models::Paste>(&db_conn)
+                .expect("Database error")
+        };
+
+        HttpResponse::Ok()
+            .content_type("text/html charset=UTF-8")
+            .streaming(
+                get_paste::PasteRenderer::new(&[
+                    paste
+                        .filename
+                        .clone()
+                        .unwrap_or(paste.id.to_string())
+                        .into_bytes(),
+                    paste.content.unwrap_or_default().into_bytes(),
+                ])
+                .expect("io failed :("),
+            )
     }
 
     #[derive(Deserialize)]
