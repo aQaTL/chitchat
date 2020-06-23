@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<!--suppress ALL -->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Nowa karta</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="styles/style.css">
+
+	<link rel="stylesheet"
+		href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/tomorrow-night.min.css">
+
+	<script src="main.js"></script>
+</head>
+<body>
+	<div id="app">
+		<header>
+			<button
+					v-for="tab in tabs"
+					v-bind:key="tab"
+					v-bind:class="['tab_button', { active: current_tab === tab }]"
+					v-on:click="change_tab(tab)"
+			>{{ tab }}
+			</button>
+		</header>
+
+		<connect-form id="connect_form" v-if="!connected" v-on:connect="handle_connect"></connect-form>
+		<keep-alive v-else>
+			<component
+					v-bind:is="current_tab"
+					v-bind="tab_props"
+					v-on:connect="handle_connect"
+					class="tab-view"
+					:class="current_tab"></component>
+		</keep-alive>
+	</div>
+</body>
+</html>

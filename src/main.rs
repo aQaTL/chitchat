@@ -129,7 +129,7 @@ async fn main() -> io::Result<()> {
             .route("/raw/{id}", web::get().to(get_paste_raw))
             .route("/paste/{id}", web::get().to(get_paste))
             .route("/send_cmd", web::post().to(chat_command))
-            .service(actix_files::Files::new("/", "frontend").index_file("index.html"))
+            .service(actix_files::Files::new("/", "frontend/dist").index_file("index.html"))
     })
     .bind(&bind_addr)?
     .run();
