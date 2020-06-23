@@ -2,6 +2,83 @@ import Vue from "vue";
 import InfiniteLoading from "vue-infinite-loading";
 
 import hljs from "highlight.js/lib/core";
+import properties from "highlight.js/lib/languages/properties.js"
+import apache from "highlight.js/lib/languages/apache.js"
+import bash from "highlight.js/lib/languages/bash.js"
+import c from "highlight.js/lib/languages/c.js"
+import csharp from "highlight.js/lib/languages/cpp.js"
+import cpp from "highlight.js/lib/languages/cpp.js"
+import clike from "highlight.js/lib/languages/c-like.js"
+import css from "highlight.js/lib/languages/css.js"
+import coffeescript from "highlight.js/lib/languages/coffeescript.js"
+import diff from "highlight.js/lib/languages/go.js"
+import go from "highlight.js/lib/languages/go.js"
+import xml from "highlight.js/lib/languages/xml.js"
+import http from "highlight.js/lib/languages/http.js"
+import json from "highlight.js/lib/languages/json.js"
+import java from "highlight.js/lib/languages/java.js"
+import javascript from "highlight.js/lib/languages/kotlin.js"
+import kotlin from "highlight.js/lib/languages/kotlin.js"
+import less from "highlight.js/lib/languages/less.js"
+import lua from "highlight.js/lib/languages/markdown.js"
+import makefile from "highlight.js/lib/languages/markdown.js"
+import markdown from "highlight.js/lib/languages/markdown.js"
+import nginx from "highlight.js/lib/languages/nginx.js"
+import objectivec from "highlight.js/lib/languages/objectivec.js"
+import php from "highlight.js/lib/languages/perl.js"
+import phptemplate from "highlight.js/lib/languages/perl.js"
+import perl from "highlight.js/lib/languages/perl.js"
+import plaintext from "highlight.js/lib/languages/plaintext.js"
+import python from "highlight.js/lib/languages/python.js"
+import ruby from "highlight.js/lib/languages/ruby.js"
+import rust from "highlight.js/lib/languages/rust.js"
+import scss from "highlight.js/lib/languages/sql.js"
+import sql from "highlight.js/lib/languages/sql.js"
+import shell from "highlight.js/lib/languages/shell.js"
+import swift from "highlight.js/lib/languages/swift.js"
+import ini from "highlight.js/lib/languages/ini.js"
+import typescript from "highlight.js/lib/languages/typescript.js"
+import yaml from "highlight.js/lib/languages/yaml.js"
+
+hljs.registerLanguage("properties", properties);
+hljs.registerLanguage("apache", apache);
+hljs.registerLanguage("bash", bash);
+hljs.registerLanguage("c", c);
+hljs.registerLanguage("csharp", csharp);
+hljs.registerLanguage("cpp", cpp);
+hljs.registerLanguage("c-like", clike);
+hljs.registerLanguage("css", css);
+hljs.registerLanguage("coffeescript", coffeescript);
+hljs.registerLanguage("diff", diff);
+hljs.registerLanguage("go", go);
+hljs.registerLanguage("xml", xml);
+hljs.registerAliases(["html"], {languageName: "xml"});
+hljs.registerLanguage("http", http);
+hljs.registerLanguage("json", json);
+hljs.registerLanguage("java", java);
+hljs.registerLanguage("javascript", javascript);
+hljs.registerLanguage("kotlin", kotlin);
+hljs.registerLanguage("less", less);
+hljs.registerLanguage("lua", lua);
+hljs.registerLanguage("makefile", makefile);
+hljs.registerLanguage("markdown", markdown);
+hljs.registerLanguage("nginx", nginx);
+hljs.registerLanguage("objectivec", objectivec);
+hljs.registerLanguage("php", php);
+hljs.registerLanguage("php-template", phptemplate);
+hljs.registerLanguage("perl", perl);
+hljs.registerLanguage("plaintext", plaintext);
+hljs.registerLanguage("python", python);
+hljs.registerLanguage("ruby", ruby);
+hljs.registerLanguage("rust", rust);
+hljs.registerLanguage("scss", scss);
+hljs.registerLanguage("sql", sql);
+hljs.registerLanguage("shell", shell);
+hljs.registerLanguage("swift", swift);
+hljs.registerLanguage("ini", ini);
+hljs.registerAliases(["toml"], {languageName: "ini"});
+hljs.registerLanguage("typescript", typescript);
+hljs.registerLanguage("yaml", yaml);
 
 Vue.component("pastes", {
 	components: {
