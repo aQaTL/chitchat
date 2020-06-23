@@ -5,10 +5,10 @@ import hljs from "highlight.js/lib/core";
 import properties from "highlight.js/lib/languages/properties.js"
 import apache from "highlight.js/lib/languages/apache.js"
 import bash from "highlight.js/lib/languages/bash.js"
-import c from "highlight.js/lib/languages/c.js"
-import csharp from "highlight.js/lib/languages/cpp.js"
-import cpp from "highlight.js/lib/languages/cpp.js"
 import clike from "highlight.js/lib/languages/c-like.js"
+import c from "highlight.js/lib/languages/c.js"
+import cpp from "highlight.js/lib/languages/cpp.js"
+import csharp from "highlight.js/lib/languages/cpp.js"
 import css from "highlight.js/lib/languages/css.js"
 import coffeescript from "highlight.js/lib/languages/coffeescript.js"
 import diff from "highlight.js/lib/languages/go.js"
@@ -43,10 +43,10 @@ import yaml from "highlight.js/lib/languages/yaml.js"
 hljs.registerLanguage("properties", properties);
 hljs.registerLanguage("apache", apache);
 hljs.registerLanguage("bash", bash);
-hljs.registerLanguage("c", c);
-hljs.registerLanguage("csharp", csharp);
-hljs.registerLanguage("cpp", cpp);
 hljs.registerLanguage("c-like", clike);
+hljs.registerLanguage("c", c);
+hljs.registerLanguage("cpp", cpp);
+hljs.registerLanguage("csharp", csharp);
 hljs.registerLanguage("css", css);
 hljs.registerLanguage("coffeescript", coffeescript);
 hljs.registerLanguage("diff", diff);
