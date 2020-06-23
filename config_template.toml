@@ -1,2 +1,3 @@
 ip = "localhost"
 port = 80
+database_url = "postgres://username:password@localhost/diesel_demo"

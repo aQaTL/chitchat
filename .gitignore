@@ -3,7 +3,6 @@
 /target
 **/*.rs.bk
 config.toml
-.env
 .todo
 frontend/dist/main.js
 node_modules
