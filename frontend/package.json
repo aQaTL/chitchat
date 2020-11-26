@@ -14,7 +14,7 @@
   "author": "aQaTL",
   "license": "MIT",
   "dependencies": {
-    "highlight.js": "^10.1.1",
+    "highlight.js": "^10.1.2",
     "vue": "^2.6.11",
     "vue-infinite-loading": "^2.4.5"
   },
